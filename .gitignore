@@ -1,0 +1,11 @@
+.env
+.venv/*
+.DS_Store
+.vscode/*
+__pycache__/*
+mcp_server/.env
+mcp_server/__pycache__/*
+mcp_server/mcp_chatbot/server_config.json
+mcp_server/mcp_chatbot/__pycache__/*
+mcp_server/tigerGraph/__pycache__/*
+uv.lock

@@ -1,0 +1,8 @@
+{
+    "tigerGraph_MCP_Server": {
+        "tigerGraph": {
+            "command": "uv",
+            "args": ["run", "/>>>Your full path goes here<<</MCP-Repository/TigerGraph-MCP/main.py"]
+        }
+    }
+}
