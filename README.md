@@ -12,7 +12,7 @@ language commands!
 3. [Project Structure](#project-structure)  
 4. [Installation](#installation)  
 5. [Configuration](#configuration-setup)
-6. [Running Chat Bot](#run-chat-bot)
+6. [Running Chat Bot](#running-chat-bot)
 7. [Connecting to Claude Desktop](#connecting-to-claude-desktop)
 8. [Contributing](#contributing)  
 9. [License](#license)  
