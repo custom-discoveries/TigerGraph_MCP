@@ -16,7 +16,7 @@ from openai import OpenAI
 from langchain_openai import ChatOpenAI
 from langchain_mcp_adapters.tools import load_mcp_tools
 from langgraph.prebuilt import create_react_agent
-from langgraph.graph.graph import CompiledGraph
+from langgraph.graph.state import CompiledStateGraph
 from langchain_community.agent_toolkits.load_tools import load_tools, get_all_tool_names
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -50,10 +50,10 @@ class MCP_ChatBot:
         # Sessions dict maps tool/prompt names or resource URIs to MCP client sessions
         self.sessions = {}
     
-    def getAgent(self) -> CompiledGraph:
+    def getAgent(self) -> CompiledStateGraph:
         return self.agent
     
-    def setAgent(self,agent:CompiledGraph):
+    def setAgent(self,agent:CompiledStateGraph):
         self.agent = agent
 
     def getTokens(self) -> int:
