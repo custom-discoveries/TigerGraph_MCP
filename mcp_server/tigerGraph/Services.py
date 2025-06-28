@@ -166,6 +166,9 @@ class TigerGraphServices(TigerGraphInterface):
             #traceback.print_exc()
 
     def isResultSetEmpty(self, queryName, results):
+        """
+        Test to see if the content of a result set is empty
+        """
         self.emptyResults=False
         if len(results) == 0 or results is None:
             print(f"No output found for query {queryName}...", file=sys.stderr)

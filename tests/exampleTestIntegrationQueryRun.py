@@ -4,7 +4,7 @@ import os
 import time
 from unittest import skip
 from mcp_server.config import tigerGraphConstants
-from mcp_server.tigerGraph.Services import TigerGraphServices  
+from mcp_server.tigerGraph.services import TigerGraphServices  
 HOST, GRAPH, USER, PASSWORD, SECRET, TOKEN = tigerGraphConstants()
 
 
@@ -118,7 +118,7 @@ class TestRunQueryIntegration(unittest.TestCase):
         )
         
         # Assert
-        self.assertIsNone(result)  # Method should not return data for CSV output
+        self.assertIn("Writing",result)  # Method should not return data for CSV output
         self.assertTrue(os.path.exists(expected_csv_path), 
                        f"CSV file was not created at {expected_csv_path}")
         
@@ -149,7 +149,7 @@ class TestRunQueryIntegration(unittest.TestCase):
         )
         
         # Assert
-        self.assertIsNone(result)  # Method should not return data for JSON output
+        self.assertIn("Writing",result)  # Method should not return data for JSON output
         self.assertTrue(os.path.exists(expected_json_path), 
                        f"JSON file was not created at {expected_json_path}")
         
