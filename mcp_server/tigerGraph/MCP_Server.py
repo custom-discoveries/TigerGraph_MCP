@@ -1,27 +1,38 @@
 #******************************************************************************
-# Copyright (c) 2025, Custom Discoveries Inc.
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
 # All rights reserved.
 # MCP_Server.py: This modelue defines the TigerGraph MCP Server and 
 # the associated tools and prompts to support accessing TigerGraph services
 #******************************************************************************
+import os
 import sys
+import csv
+import json
 import warnings
 
-from typing import Literal
+from pathlib import Path
+from datetime import datetime
+from typing import Literal, List
 from mcp.server.fastmcp import FastMCP
-from mcp_server.tigerGraph.Services import TigerGraphServices
+from mcp_server.config import tigerGraphConstants
+from mcp_server.tigerGraph.services import TigerGraphServices
+from mcp_server.tigerGraph.prettyPrintDir import PrettyPrintDirectory
+
 import logging
 
 # Disable logger
 warnings.filterwarnings('ignore')
 logging.getLogger('mcp.server.lowlevel.server').disabled = True
-
+OUTPUT_DIR = tigerGraphConstants(output=True)
 
 class TigerGraph_MCP_Server():
     
     def __init__(self):
+        self.title="Custom Discoveries TigerGraph_MCP_Server"
+        self.version="V2.0"
         self.mcp = FastMCP("TigerGraph MCP Server")
         self.services = TigerGraphServices()
+        self.prettyPrintDir:PrettyPrintDirectory = PrettyPrintDirectory(OUTPUT_DIR)
         
         # Register tools directly
         self.mcp.tool()(self.get_schema)
@@ -40,21 +51,34 @@ class TigerGraph_MCP_Server():
         self.mcp.prompt()(self.define_vertex_prompt)
         self.mcp.prompt()(self.update_vertex_prompt)
 
+        #Register Resources directly
+        try:
+            self.mcp.resource(uri="querydir://listQueries")(self.listQueryDir)
+            self.mcp.resource(uri="querydir://{query_file_name}")(self.get_query_output)
+        except Exception as error:
+            print(f"Error in initization: {error}")
+
+
     def get_schema(self):
         """MCP tool: Get TigerGraph Schema."""
         return self.services.get_schema()
 
 
-    def run_query(self, query_name: str, params: dict = {}, timeout:int=60):
+    def run_query(self, query_name: str, params: dict = {}, outputFormat:Literal["Terminal","CSV","JSON"]="Terminal", timeout:int=60):
         """ MCP tool: Run a TigerGraph query with parameters.
             Args:
                 query:
                     The name of the query to run.
                 params:
                     A dictionary of parameters to pass into query.
-                timeout: Maximum duration for successful query execution, in seconds (default=60 seconds)
+                outputFormat:
+                    Users can specify the query output format as Terminal, CSV or JSON. If either CSV, or CSV is passed,
+                    the query results will be written to a file in the output directory defined in the .env file. By default,
+                    the format is 'Terminal', which returns JSON data directly to the caller without writing to a file.
+                timeout: 
+                    Maximum duration for successful query execution, in seconds (default=60 seconds)
                 """
-        return self.services.run_query(query_name, params, timeout=timeout)
+        return self.services.run_query(query_name, params, outputFormat=outputFormat, timeout=timeout)
 
     def show_query(self, query_name: str):
         """MCP tool: Retrieve the content of a GSQL query."""
@@ -161,11 +185,65 @@ class TigerGraph_MCP_Server():
     and the value of the dictonary to update the vertex attribute with the new data.
     3. Check the status of the TigerGraph database by performing a get_vertex api call using the vertex name and vertex id"""
 
+   
+    def listQueryDir(self) -> str:
+        """
+        List all available query out files in directory.
+        
+        This resource provides a simple list of all available query output files.
+        """
+        query_output = []
+        query_output = self.prettyPrintDir.getFormatedFileDir()
+ 
+        # Create a simple markdown list
+        content=""
+        if query_output:
+            for file in query_output:
+                content += f"{file}\n"
+        else:
+            content += "No queries found.\n"
+        
+        return content
+
+    
+    def get_query_output(self,query_file_name: str) -> str:
+        """
+        Get the contentd of the query output.
+        Args:
+            query_name: Name of query file to read
+        """
+        output_dir = OUTPUT_DIR
+        query_output_file = os.path.join(output_dir, query_file_name)
+        
+        if not os.path.exists(query_output_file):
+            return f"# No Query Output found for: {query_file_name}\n\n"
+        
+        try:
+            if query_file_name.endswith(".json"):
+                with open(query_output_file, 'r') as f:
+                    query_data = json.load(f)
+                return json.dumps(query_data,indent=4, separators=(',',':'))    
+            elif query_file_name.endswith(".csv"):
+                data = []
+                with open(query_output_file, 'r', newline='', encoding='utf-8') as file:
+                    csv_reader = csv.DictReader(file)
+                    for row in csv_reader:
+                        data.append(row)                
+            
+                return json.dumps(data,indent=4, separators=(',',':'))
+            
+        except Exception as error:
+            return f"# Error {error} reading query data for {query_file_name}\n"
+
+
     def run_server(self):
         """Run server"""
 
         try:
-            print(f"Please Standby, Starting Up TigerGraph MCP Server for Graph {self.services.getGraphName()} ...", file=sys.stderr)
+            print(f"\n\nWelcom to Custom Discoveries TigerGraph MCP Server - Version {self.version}", file=sys.stderr)
+            print(f"Starting Up TigerGraph MCP Server for Graph {self.services.getGraphName()} ...", file=sys.stderr)
+
+ 
             self.mcp.run(transport='stdio')
 
         except Exception as error:

@@ -2,10 +2,12 @@
 .venv/*
 .DS_Store
 .vscode/*
+Output/*
 __pycache__/*
 mcp_server/.env
 mcp_server/__pycache__/*
 mcp_server/mcp_chatbot/server_config.json
 mcp_server/mcp_chatbot/__pycache__/*
 mcp_server/tigerGraph/__pycache__/*
+tests/testIntegrationQueryRun.py
 uv.lock

@@ -1,5 +1,5 @@
 #******************************************************************************
-# Copyright (c) 2025, Custom Discoveries Inc. (www.customdiscoveries.com)
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
 # All rights reserved.
 #
 # tigerGraph_services.py: This modelue defines the TigerGraphService class 
@@ -7,16 +7,21 @@
 #******************************************************************************
 import sys
 import re
+import csv
+import json
 import datetime
 import pandas as pd
 from typing import Dict, Any, Tuple, Union, Literal
 
 from pyTigerGraph import TigerGraphConnection
-from mcp_server.tigerGraph.Interface import TigerGraphInterface
-from mcp_server.tigerGraph.Session import TigerGraph_Session
+from mcp_server.config import OUTPUT_PATH, tigerGraphConstants
+from mcp_server.tigerGraph.interface import TigerGraphInterface
+from mcp_server.tigerGraph.session import TigerGraph_Session
+#
+#intialize TigerGraph Constants by reading .env file
+#
+OUTPUT_PATH = tigerGraphConstants(output=True)
 
-
-VECTOR="VECTOR"
 #
 # The assumption is that you have setup (at a minumum) a user and password
 # in your Tigergraph database
@@ -31,6 +36,7 @@ class TigerGraphServices(TigerGraphInterface):
         self.session = TigerGraph_Session()
         self.session.getConnection()
 
+
     def getConnection(self) -> TigerGraphConnection:
         return self.session.getConnection()
 
@@ -40,7 +46,7 @@ class TigerGraphServices(TigerGraphInterface):
     def get_schema(self):
         return self.getConnection().getSchema(force=True)
 
-    def run_query(self, query_name: str, params: dict = {}, timeout:int=60):
+    def run_query(self, query_name: str, params: dict, outputFormat:Literal["Terminal","CSV","JSON"]="Terminal", timeout:int=60):
         """Runs a GSQL query and processes the output.
 
         Args:
@@ -50,7 +56,128 @@ class TigerGraphServices(TigerGraphInterface):
                 A dictionary of parameters to pass into query.
             timeout: Maximum duration for successful query execution (in seconds)
             """
-        return self.getConnection().runInstalledQuery(query_name, params, timeout=(timeout*1000))
+        results = self.getConnection().runInstalledQuery(query_name, params, timeout=(timeout*1000))
+        self.emptyResults = self.isResultSetEmpty(query_name, results)
+        if self.emptyResults == False:
+            if outputFormat.lower() == 'terminal':
+                return(f"{json.dumps(results, indent=4, separators=(',', ':'))}")                            
+            if outputFormat.lower() == 'csv':
+                outputFile = f"{OUTPUT_PATH}/{query_name}.csv"
+                self.json_to_csv(results, outputFile)
+                return(f"\nWriting Query Results to {outputFile}")
+            elif outputFormat.lower() == 'json':
+                outputFile = f"{OUTPUT_PATH}/{query_name}.json"
+                with open(outputFile, 'w', encoding='utf-8') as file:                                    
+                    json.dump(results, file, indent=4, separators=(',', ':'))
+                return(f"\nWriting Query Results to {outputFile}")
+        else:
+            return ""
+        
+    def json_to_csv(self, json_data, csv_filename):
+        with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+                    
+            # Extract all possible keys dynamically
+            resultRow = list()
+            for entry in json_data:
+                self._writeCSV_header(writer, entry)
+                self._writeCSV_values(writer, entry, resultRow)
+
+    def _writeCSV_header(self, writer, entry):
+        try:
+            header_keys = list()
+            for aResultSet in entry:
+                anObject = entry.get(aResultSet)
+                if isinstance(anObject,list):
+                    for row in anObject:
+                        if isinstance(row,dict):
+                            if len(row.get("v_type",{})) > 0:
+                                header_keys.append("v_type")
+                                for attr in row.get("attributes", {}).keys():
+                                    header_keys.append(attr)
+                            elif len(row.get("e_type",{})) > 0:
+                                for attr in row:
+                                    if (attr == 'attributes'):
+                                        for attr in row.get("attributes", {}).keys():
+                                            header_keys.append(attr)
+                                    else:
+                                        header_keys.append(attr)
+                            else:
+                                for attr in row:
+                                    header_keys.append(attr)
+                        else:
+                            header_keys.append(aResultSet)
+                        break
+                else:
+                    header_keys.append(aResultSet)
+
+                    # Write header row
+            writer.writerow(header_keys)
+        except Exception as e:
+            print(f"Error in _writeCSV_header:")
+            #traceback.print_exc()
+
+    def _writeCSV_values(self, writer, entry, resultRow):
+        try:
+            for aResultSet in entry:
+                anObject = entry.get(aResultSet)
+                if isinstance(anObject,list):                    
+                    for row in anObject:
+                        resultRow = list()
+                        if isinstance(row,dict):
+                            if len(row.get("v_type",{})) > 0:
+                                resultRow.append(row.get("v_type",{}))
+                                for attr in row.get("attributes", {}).keys():
+                                    value = row.get("attributes", {}).get(attr)
+                                    if isinstance(value, list):
+                                            # print('"' + ', '.join(map(str, value))+ '"')
+                                        resultRow.append(', '.join(map(str, value)))
+                                    else:
+                                        resultRow.append(row.get("attributes", {}).get(attr))
+                            elif len(row.get("e_type",{})) > 0:
+                                for attr in row:
+                                    if (attr == 'attributes'):
+                                        resultRow.append(row.get("attributes", {}).get(attr))
+                                    else:
+                                        resultRow.append(row.get(attr))
+
+                                    # Write row dynamically
+                            else:
+                                for attr in row:
+                                    resultRow.append(row.get(attr))
+                            
+                            writer.writerow(resultRow)
+                        else:
+                            resultRow.append(row)
+                            writer.writerow(resultRow)
+                else:
+                    resultRow.append(anObject)
+                    writer.writerow(resultRow)
+            writer.writerow([])
+        except Exception as e:
+            print(f"Error in _writeCSV_values:")
+            #traceback.print_exc()
+
+    def isResultSetEmpty(self, queryName, results):
+        self.emptyResults=False
+        if len(results) == 0 or results is None:
+            print(f"No output found for query {queryName}...", file=sys.stderr)
+            self.emptyResults=True
+            return self.emptyResults
+                        
+        if not self.emptyResults:
+            for dic in results:
+                for key in dic.keys():
+                    value = dic.get(key)
+                    if isinstance(value, (str, list, dict, set)):
+                        self.emptyResults = not bool(value)
+                    else:
+                        self.emptyResults = (value == 0)
+                            
+            if self.emptyResults:        
+                print(f"No output found for query {queryName}...", file=sys.stderr)
+        return self.emptyResults
+
 
     def show_query(self, query_name: str):
         return self.getConnection().showQuery(query_name)

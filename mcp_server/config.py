@@ -1,5 +1,5 @@
 #******************************************************************************
-# Copyright (c) 2025, Custom Discoveries Inc.
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
 # All rights reserved.
 # config.py: Manages environment variables by system specification
 #******************************************************************************
@@ -15,6 +15,7 @@ PASSWORD = ""
 SECRET = ""
 TOKEN = ""
 TOKENS = 0
+OUTPUT_PATH=""
 TG_SYSTEM = "tigerGraph"
 OPENAI = "OPENAI"
 ANTHROPIC = "ANTHROPIC"
@@ -29,7 +30,8 @@ tigerGraph_Keys:dict = {
     'user':"TG_USERNAME",
     'password':"TG_PASSWORD",
     'secret':"TG_SECRET",
-    'token':"TG_TOKEN"
+    'token':"TG_TOKEN",
+    'outputPath':"TG_OUTPUT_PATH",
 }
 anthropic_Keys:dict = {
     'api_key':'ANTHROPIC_API_KEY',
@@ -49,7 +51,7 @@ MASTER_KEYS:dict = {
     OPENAI:openAI_Keys
 }
 
-def tigerGraphConstants():
+def tigerGraphConstants(output=False):
     try:
         #
         # Load configuration attributes from .env file
@@ -68,7 +70,11 @@ def tigerGraphConstants():
         PASSWORD = os.getenv(system_keys['password'],"tryToGuess")
         SECRET = os.getenv(system_keys['secret'],'')
         TOKEN = os.getenv(system_keys['token'],'')
-        return (HOST, GRAPH, USER, PASSWORD, SECRET, TOKEN)
+        OUTPUT_PATH = os.getenv(system_keys['outputPath'],'')
+        if output:
+            return OUTPUT_PATH
+        else:
+            return (HOST, GRAPH, USER, PASSWORD, SECRET, TOKEN)
         
     except Exception as error:
         print(f"Error in initializeConstants {error}", file=sys.stderr)

@@ -31,7 +31,7 @@ class TigerGraphInterface(ABC):
         pass
 
     @abstractmethod
-    def run_query(self, query_name: str, params: Dict[str, Any] = {}, timeout: int = 60) -> Any:
+    def run_query(self, query_name: str, params: Dict[str, Any] = {}, outputFormat:Literal["Terminal","CSV","JSON"]="Terminal", timeout: int = 60) -> Any:
         """
         Run a TigerGraph query with parameters.
         
@@ -39,8 +39,11 @@ class TigerGraphInterface(ABC):
             query_name (str): The name of the query to execute.
             params (Dict[str, Any], optional): Dictionary of parameters to pass to the query.
                                              Defaults to None.
-            timeout (int, optional): Maximum duration for successful query execution in seconds.
-                                   Defaults to 60 seconds.
+            outputFormat ("Terminal","CSV","JSON", optional):Users can specify the query output format as Terminal,
+                        CSV or JSON. If either CSV, or CSV is passed, the query results will be written to a file in the output 
+                        directory defined in the .env file. By default, the format is 'Terminal', which returns JSON data 
+                        directly to the caller without writing to a file.
+            timeout (int, optional): Maximum duration for successful query execution in seconds. Defaults to 60 seconds.
         
         Returns:
             Any: The query execution results.

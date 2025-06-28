@@ -1,5 +1,5 @@
 #******************************************************************************
-# Copyright (c) 2025, Custom Discoveries Inc.
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
 # All rights reserved.
 #
 # tigerGraph_Session.py: This modelue defines the TigerGraphSession class for
@@ -38,7 +38,9 @@ class TigerGraph_Session():
             self.conn = TigerGraphConnection(
                 host=HOST,
                 graphname=GRAPH,
-                apiToken=TOKEN
+                apiToken=TOKEN,
+                username=USER,
+                password=PASSWORD
             )
             results = self.getConnection().ping()
             if (results['error'] is not True):
@@ -46,11 +48,9 @@ class TigerGraph_Session():
                     self._createGraph()    
                 else:
                     results = self.getConnection().getSecrets()
-                    if (results.get(self.getSecretAlias(),None) is not None):
-                        print(f">>> INFO - Found Existing Secret",file=sys.stderr)
-                    else:
+                    if (results.get(self.getSecretAlias(),None) is None):
                         self._createSecret(self.getSecretAlias())
-
+                        
         except Exception as error:
             print(f">>> ERROR - TigerGraph server not running {error}: ",file=sys.stderr)
 

@@ -1,8 +1,6 @@
 # TigerGraph-MCP
 
-TigerGraph-MCP is a python Model Context Protocol server that exposes TigerGraph operations
-(queries, schema, vertices, edges, UDFs) as structured tools, prompts, and URI-based resources
-for MCP agents. This will allow you to interact with your TigerGraph Database using natural 
+Custom Discoveries TigerGraph-MCP V2.0 is a community based python Model Context Protocol server that exposes TigerGraph operations (queries, schema, vertices, edges, UDFs) as structured tools, prompts, and URI-based resources for MCP agents. This will allow you to interact with your TigerGraph Database using natural 
 language commands!
 
 ## Table of Contents
@@ -52,11 +50,18 @@ language commands!
      (default is Anthropic LLM model) Second, you will need to configure the server_config.json file,
       under mcp_server/mcp_chatbot folder, specifying the full path to the main.py file. 
       The chatbot usage is as follows:
+       - @listQueries to see available Query Output Files
+       - @<query_file_name> list content of Query file
        - /tools to list the available tools under the mcp server
        - /prompts to list the available prompts under the mcp server
        - /resources is a **planned future enhancment**
-         
-  2. We have developed some Session Management Features that will help the developer with
+  
+  2. Custom Discoveries TigerGraph-MCP V2.0 now includes enhanced functionality for exporting 
+     query results to CSV or JSON file formats within a designated output directory. This output
+     directory can be configured through the mcp_server/.env file, with the default location 
+     set to ./Output.
+
+  3. We have developed some Session Management Features that will help the developer with
   handling TigerGraph Session around SECRET & TOKEN Management.  In short, TigerGraph session 
   initialization checks the following:
 
@@ -76,7 +81,7 @@ TigerGraph-MCP/
                                 requirements.txt file.
 ├── LICENSE                   # MIT License
 ├── main.py                   # MCP app bootstrap (`run_server()`) Used to start TigerGraph_MCP server
-├── ChatBot_Main.py           # Main python program to invoke mcp_chatbot.py
+├── chatBot_Main.py           # Main python program to invoke mcp_chatbot.py
 ├── mcp_server
       ├── .env                # TigerGraph (HOST, GRAPH, SECRET) & LLM configuration paramaters
       ├── config.py           # Reads environment config file (.env) and defines System Constants
@@ -84,11 +89,13 @@ TigerGraph-MCP/
             ├── mcp_chatbot.py     # Chatbot for LLM to interact with TigerGraph MCP Server (uses .env file)
             ├── server_config.json # Configuration file to define TigerGraph MCP Server
       ├── tigerGraph
-            ├── Interface.py  # Interface definitions of client methods
-            ├── MCP_Server.py # `@mcp.tool` and `@mcp.prompts` definitions, exposing client methods & prompts
-            ├── Services.py   # Implement service calls to TigerGraph database
-            ├── Session.py    # Encapsulates TigerGraphConnection and core session operations
+            ├── interface.py      # Interface definitions of client methods
+            ├── mcp_Server.py     # `@mcp.tool` and `@mcp.prompts` definitions, exposing client methods & prompts
+            ├── prettyPrintDir.py # Implements pretty print directory functionality
+            ├── services.py       # Implement service calls to TigerGraph database
+            ├── session.py        # Encapsulates TigerGraphConnection and core session operations
        
+├── Output                    # Output directory where Query outputs are written (.csv or .json format)       
 ├── pyproject.toml            # Project metadata & dependencies
 ├── README.md                 # This markdown README file
 ├── requirements.txt          # Python package dependencies

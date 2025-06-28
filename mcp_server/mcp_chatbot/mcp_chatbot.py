@@ -1,3 +1,8 @@
+#******************************************************************************
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
+# All rights reserved.
+# mcp_chatbot.py: This modelue defines the Custom Discoveries  MCP ChatBot
+#******************************************************************************
 import json
 import asyncio
 import sys
@@ -216,9 +221,9 @@ class MCP_ChatBot:
         session = self.sessions.get(resource_uri)
         
         # Fallback for papers URIs - try any papers resource session
-        if not session and resource_uri.startswith("papers://"):
+        if not session and resource_uri.startswith("querydir://"):
             for uri, sess in self.sessions.items():
-                if uri.startswith("papers://"):
+                if uri.startswith("querydir://"):
                     session = sess
                     break
             
@@ -293,9 +298,10 @@ class MCP_ChatBot:
             print(f"Error: {e}")
     
     async def chat_loop(self):
-        print("\nWelcome to Custom Discoveries TigerGraph MCP Chatbot!")
-        print("Type your queries or type ['quit'|'exit'] to exit.")
-        #print("Use @folders to see available topics")
+        print("\nWelcome to Custom Discoveries TigerGraph MCP Chatbot!\n")
+        print("Type your queries or type ['quit'|'exit'] to exit.")    
+        print("Use @listQueries to see available Query Output Files")
+        print("Use @<query_file_name> list content of Query file")            
         print("Use /tools to list available tools")
         print("Use /prompts to list available prompts")
         
@@ -311,11 +317,11 @@ class MCP_ChatBot:
                 # Check for @resource syntax first
                 if query.startswith('@'):
                     # Remove @ sign  
-                    topic = query[1:]
-                    if topic == "folders":
-                        resource_uri = "papers://folders"
+                    query_file_name = query[1:]
+                    if query_file_name == "listQueries":
+                        resource_uri = "querydir://listQueries"
                     else:
-                        resource_uri = f"papers://{topic}"
+                        resource_uri = f"querydir://{query_file_name}"
                     await self.get_resource(resource_uri)
                     continue
                 
