@@ -11,6 +11,7 @@ import csv
 import json
 import datetime
 import pandas as pd
+from pathlib import Path
 from typing import Dict, Any, Tuple, Union, Literal
 
 from pyTigerGraph import TigerGraphConnection
@@ -35,6 +36,12 @@ class TigerGraphServices(TigerGraphInterface):
     def __init__(self):
         self.session = TigerGraph_Session()
         self.session.getConnection()
+        self.initOutputDir()
+
+    def initOutputDir(self):
+        self.output_path = Path(OUTPUT_PATH)
+        if not self.output_path.exists():
+            Path.mkdir(self.output_path, exist_ok=True)
 
 
     def getConnection(self) -> TigerGraphConnection:
