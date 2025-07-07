@@ -2,7 +2,7 @@
 # Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
 # All rights reserved.
 #
-# tigerGraph_services.py: This modelue defines the TigerGraphService class 
+# tigerGraph_services.py: This modelue defines the TigerGraphService class
 # for acessing TigerGraph services to the graph database
 #******************************************************************************
 import sys
@@ -30,7 +30,7 @@ OUTPUT_PATH = tigerGraphConstants(output=True)
 class TigerGraphServices(TigerGraphInterface):
     """
     Encapsulates all TigerGraph operations for MCP.
-    Assumption that TigerGraph server is up and running 
+    Assumption that TigerGraph server is up and running
     with a user id defined
     """
     def __init__(self):
@@ -49,7 +49,7 @@ class TigerGraphServices(TigerGraphInterface):
 
     def getGraphName(self) -> str:
         return self.session.graphName
-    
+
     def get_schema(self):
         return self.getConnection().getSchema(force=True)
 
@@ -67,23 +67,23 @@ class TigerGraphServices(TigerGraphInterface):
         self.emptyResults = self.isResultSetEmpty(query_name, results)
         if self.emptyResults == False:
             if outputFormat.lower() == 'terminal':
-                return(f"{json.dumps(results, indent=4, separators=(',', ':'))}")                            
+                return(f"{json.dumps(results, indent=4, separators=(',', ':'))}")
             if outputFormat.lower() == 'csv':
                 outputFile = f"{OUTPUT_PATH}/{query_name}.csv"
                 self.json_to_csv(results, outputFile)
                 return(f"\nWriting Query Results to {outputFile}")
             elif outputFormat.lower() == 'json':
                 outputFile = f"{OUTPUT_PATH}/{query_name}.json"
-                with open(outputFile, 'w', encoding='utf-8') as file:                                    
+                with open(outputFile, 'w', encoding='utf-8') as file:
                     json.dump(results, file, indent=4, separators=(',', ':'))
                 return(f"\nWriting Query Results to {outputFile}")
         else:
             return ""
-        
+
     def json_to_csv(self, json_data, csv_filename):
         with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-                    
+
             # Extract all possible keys dynamically
             resultRow = list()
             for entry in json_data:
@@ -128,7 +128,7 @@ class TigerGraphServices(TigerGraphInterface):
         try:
             for aResultSet in entry:
                 anObject = entry.get(aResultSet)
-                if isinstance(anObject,list):                    
+                if isinstance(anObject,list):
                     for row in anObject:
                         resultRow = list()
                         if isinstance(row,dict):
@@ -152,7 +152,7 @@ class TigerGraphServices(TigerGraphInterface):
                             else:
                                 for attr in row:
                                     resultRow.append(row.get(attr))
-                            
+
                             writer.writerow(resultRow)
                         else:
                             resultRow.append(row)
@@ -174,7 +174,7 @@ class TigerGraphServices(TigerGraphInterface):
             print(f"No output found for query {queryName}...", file=sys.stderr)
             self.emptyResults=True
             return self.emptyResults
-                        
+
         if not self.emptyResults:
             for dic in results:
                 for key in dic.keys():
@@ -183,8 +183,8 @@ class TigerGraphServices(TigerGraphInterface):
                         self.emptyResults = not bool(value)
                     else:
                         self.emptyResults = (value == 0)
-                            
-            if self.emptyResults:        
+
+            if self.emptyResults:
                 print(f"No output found for query {queryName}...", file=sys.stderr)
         return self.emptyResults
 
@@ -194,18 +194,19 @@ class TigerGraphServices(TigerGraphInterface):
 
     def get_installed_queries(self) -> Union[dict, str, 'pd.DataFrame']:
         return self.getConnection().getInstalledQueries()
-    
+
     def define_vertex(self, vertex_type: str, vertex_id_name: str, attributes: dict) -> bool:
         """
         Generate a GSQL schema change job to define a vertex type with specified attributes.
-        
+        (The reason we went with GSQL vs. pyTigerGraph interface, is that up upsertVertex() doesn't
+         create a Vertex, and if it did, it doesn't support vector attributes)
         Args:
             vertex_name (str): The name of the vertex type (e.g., 'Firm', 'Person')
             id_field_name (str): The name of the primary ID field (e.g., 'firm_id', 'person_id')
             attributes (dict): Dictionary of attribute names and their data types
                             Format: {"attribute_name": "data_type"}
                             Valid types: STRING, INT, FLOAT, BOOL, DATETIME, etc.
-        
+
         Prompt: define_vertex_prompt() -> defined on mcp_server.py
 
         Returns:
@@ -214,7 +215,7 @@ class TigerGraphServices(TigerGraphInterface):
         try:
             # Create a unique job name based on vertex name
             job_name = f"add_{vertex_type.lower()}_vertex_job"
-            
+
             # Start building the GSQL schema change job
             gsql_parts = [
                 f"USE Graph {self.getGraphName()}\n",
@@ -223,21 +224,21 @@ class TigerGraphServices(TigerGraphInterface):
                 f"PRIMARY_ID {vertex_id_name} STRING"
             ]
             if len(attributes) >= 1:
-                gsql_parts.append(f", ")            
+                gsql_parts.append(f", ")
             # Add each attribute with its data type
             self.addAttributes(attributes, gsql_parts,"")
-            
+
             # Close the vertex definition with PRIMARY_ID_AS_ATTRIBUTE option
             gsql_parts.append(f") WITH PRIMARY_ID_AS_ATTRIBUTE=\"true\";\n")
             gsql_parts.append("}\n")
             gsql_parts.append(f"RUN SCHEMA_CHANGE JOB {job_name}")
-            
+
             dropJob = f"DROP JOB {job_name}"
             results = self.getConnection().gsql(dropJob)
 
             gsqlAddVertex = "".join(gsql_parts)
             #print(f">>> gsql AddVertex: {gsqlAddVertex}", file=sys.stderr)
-            
+
             results = self.getConnection().gsql(gsqlAddVertex,self.getGraphName())
             if isinstance(results, str):
                 print(f"*** Define Vertex Results >>>: {results}", file=sys.stderr)
@@ -265,24 +266,24 @@ class TigerGraphServices(TigerGraphInterface):
                 attributes.pop(attr_name)
                 return attr_name
         return ""
-    
+
     def alter_vertex(self, vertex_type:str, operator:Literal["ADD", "DROP"], attributes:dict={}, vector_attributes:dict={}) -> bool:
         """
         Generate a GSQL schema change job to alter a vertex type with specified attributes.
-        Suppports Vector attributes with sepeaate vector attribute list. 
+        Suppports Vector attributes with sepeaate vector attribute list.
         Note: Only one Vector attribute can be altered per alter_vertex() function call
         Args:
             vertex_type (str): The name of the vertex type (e.g., 'Firm', 'Person')
             operator (str): The alter operator can either be "ADD" or "DROP"
-            
+
             attributes (dict): Dictionary of attribute names and their data types
                             Format: {"attribute_name": "data_type"}
                             Valid types: STRING, INT, FLOAT, BOOL, DATETIME etc.
-            
+
             vector_attributes (dict): Dictionay of VECTOR attributes and types
-                            Valid Names:types: some_name:"VECTOR", DIMENSION:INT, 
+                            Valid Names:types: some_name:"VECTOR", DIMENSION:INT,
                                         METRIC: "COSINE" or "L2" or "IP", INDEXTYPE:"HNSW", DATATYPE:"FLOAT"
-        
+
         Prompt: define_alter_prompt() -> defined on mcp_server.py
 
         Returns:
@@ -291,7 +292,7 @@ class TigerGraphServices(TigerGraphInterface):
         try:
             # Create a unique job name based on vertex name
             job_name = f"alter_{vertex_type.lower()}_vertex_job"
-            
+
             # Start building the GSQL schema change job
             gsql_parts = [
                 f"USE Graph {self.getGraphName()}\n",
@@ -310,7 +311,7 @@ class TigerGraphServices(TigerGraphInterface):
                     for v, (v_attr_name, v_attr_type) in enumerate(vector_attributes.items()):
                         comma = ', ' if v < attr_count-1 else ''
                         gsql_parts.append(f"{v_attr_name}={self.infer_vector_type(v_attr_type)}{comma}")
-                
+
                     gsql_parts.append(f");\n")
                 else:
                     gsql_parts.append(f";\n")
@@ -318,12 +319,12 @@ class TigerGraphServices(TigerGraphInterface):
 
             elif len(attributes) > 0:
                 gsql_parts.append(f" ATTRIBUTE (")
-                # Add each attribute with its data type             
+                # Add each attribute with its data type
                 self.addAttributes(attributes, gsql_parts, operator)
                 gsql_parts.append(f");\n")
 
             gsql_parts.append("}\n")
-            gsql_parts.append(f"RUN SCHEMA_CHANGE JOB {job_name}")           
+            gsql_parts.append(f"RUN SCHEMA_CHANGE JOB {job_name}")
             gsqlAlterVertex = "".join(gsql_parts)
             print(f">>> gsql AlterVertex: {gsqlAlterVertex}", file=sys.stderr)
 
@@ -335,10 +336,10 @@ class TigerGraphServices(TigerGraphInterface):
                 print(f"*** Alter Vertex Results >>>: {results}", file=sys.stderr)
                 results = self.getConnection().gsql(dropJob)
             return True
-        
+
         except Exception as error:
             print(f"Error in alter_vertex(): {error}", file=sys.stderr)
-            return False       
+            return False
 
     def define_edge(self, edge_name: str, from_vertex: str, to_vertex: str, edge_type:Literal["UNDIRECTED", "DIRECTED"],
                           attributes: Dict[str, Any]={}, discriminator: Dict[str, Any]={}) -> bool:
@@ -350,13 +351,13 @@ class TigerGraphServices(TigerGraphInterface):
                 edge_type (str): Either one of the two options: 'UNDIRECTED' or 'DIRECTED'
                 attributes (dict): Dictionary of attribute names and their data types
                 discriminator (dict): DISCRIMINATOR - Dictionary of attribute names and types that defines a discriminator
-                                      in an edge type definition to allow multiple instances of an edge type between 
+                                      in an edge type definition to allow multiple instances of an edge type between
                                       two vertices.
         """
         try:
             # Create a unique job name based on vertex name
             job_name = f"add_edge_job"
-                    
+
             gsql_parts = [
                 f"USE Graph {self.getGraphName()}\n",
                 f"CREATE SCHEMA_CHANGE JOB {job_name} {{\n",
@@ -379,13 +380,13 @@ class TigerGraphServices(TigerGraphInterface):
             for i, (attr_name, attr_type) in enumerate(attributes.items()):
                 comma = ',' if i < attr_count - 1 else ''
                 gsql_parts.append(f"{comma} {attr_name} {self.infer_gsql_type(attr_type)}{comma}")
-            
+
             # Close the Edge definition with Roption
             if (edge_type == "UNDIRECTED"):
                 gsql_parts.append(f");\n")
             else:
                 gsql_parts.append(f") WITH REVERSE_EDGE=\"reverse_{edge_name}\";\n")
-            
+
             gsql_parts.append("}\n")
             gsql_parts.append(f"RUN SCHEMA_CHANGE JOB {job_name}")
 
@@ -403,7 +404,7 @@ class TigerGraphServices(TigerGraphInterface):
             results = self.getConnection().gsql(dropJob)
             print(f"Drop Edge Results: {results}", file=sys.stderr)
             return True
-        
+
         except Exception as error:
             print(f"Error in define_edge(), {error}")
             return False
@@ -411,10 +412,10 @@ class TigerGraphServices(TigerGraphInterface):
     def infer_vector_type(self, attr_type):
         """
         Helper function to infer GSQL Vector type
-        
+
         Args:
             sample_value: A sample value to infer the type from
-        
+
         Returns:
             str: DIMENSION:INT, METRIC: "COSINE" or "L2" or "IP", INDEXTYPE:"HNSW", DATATYPE:"FLOAT"
         """
@@ -443,12 +444,12 @@ class TigerGraphServices(TigerGraphInterface):
 
     def infer_gsql_type(self, attr_type):
         """
-        Helper function to infer GSQL data type from either a sample value, 
+        Helper function to infer GSQL data type from either a sample value,
         or Actual type defined as a string.
-        
+
         Args:
             sample_value: A sample value to infer the type from
-        
+
         Returns:
             str: GSQL data type (STRING, INT, FLOAT, BOOL)
         """
@@ -505,7 +506,7 @@ class TigerGraphServices(TigerGraphInterface):
 
     def upsert_edge(self, source_type: str, source_id: str, edge_type: str,
                     target_type: str, target_id: str, attributes: dict = {})  -> int:
-        
+
         return self.getConnection().upsertEdge(source_type, source_id, edge_type,
                                     target_type, target_id, attributes or {})
 
@@ -515,8 +516,7 @@ class TigerGraphServices(TigerGraphInterface):
     def run_gsql(self, query: str):
         return self.getConnection().gsql(query=query, graphname=self.getConnection().graphname)
 
-    def get_udf(self, ExprFunctions: bool = True, ExprUtil: bool = True, 
+    def get_udf(self, ExprFunctions: bool = True, ExprUtil: bool = True,
                 json_out: bool = False) -> Union[Tuple[str, str], Dict[str, Any], str]:
 
         return self.getConnection().getUDF(ExprFunctions, ExprUtil, json_out)
-
