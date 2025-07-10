@@ -29,7 +29,7 @@ class TigerGraph_MCP_Server():
     
     def __init__(self):
         self.title="Custom Discoveries TigerGraph_MCP_Server"
-        self.version="V2.0"
+        self.version="V2.1"
         self.mcp = FastMCP("TigerGraph MCP Server")
         self.services = TigerGraphServices()
         self.prettyPrintDir:PrettyPrintDirectory = PrettyPrintDirectory(OUTPUT_DIR)
