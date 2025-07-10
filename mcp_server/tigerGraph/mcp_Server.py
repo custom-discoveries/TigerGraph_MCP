@@ -60,12 +60,12 @@ class TigerGraph_MCP_Server():
 
 
     def get_schema(self):
-        """MCP tool: Get TigerGraph Schema."""
+        """TigerGraph MCP tool: Get TigerGraph Schema."""
         return self.services.get_schema()
 
 
     def run_query(self, query_name: str, params: dict = {}, outputFormat:Literal["Terminal","CSV","JSON"]="Terminal", timeout:int=60):
-        """ MCP tool: Run a TigerGraph query with parameters.
+        """ TigerGraph MCP tool: Run a TigerGraph query with parameters.
             Args:
                 query:
                     The name of the query to run.
@@ -81,37 +81,37 @@ class TigerGraph_MCP_Server():
         return self.services.run_query(query_name, params, outputFormat=outputFormat, timeout=timeout)
 
     def show_query(self, query_name: str):
-        """MCP tool: Retrieve the content of a GSQL query."""
+        """TigerGraph MCP tool: Retrieve the content of a GSQL query."""
         return self.services.show_query(query_name)
 
 
     def get_installed_query(self):
-        """MCP tool: List all installed GSQL queries."""
+        """TigerGraph MCP tool: List all installed GSQL queries."""
         return self.services.get_installed_queries()
 
 
     def define_vertex(self, vertex_type: str, vertex_id_name: str, attributes: dict):
-        """MCP tool: Define a vertex in TigerGraph database.
+        """TigerGraph MCP tool: Define a vertex in TigerGraph database.
         Prompt: define_vertex_prompt()
         """
         return self.services.define_vertex(vertex_type, vertex_id_name, attributes)
 
     def update_vertex(self, vertex_type: str, vertex_id: str, attributes: dict):
-        """MCP tool: Update a vertex with data that is specified in the attributes.
+        """TigerGraph MCP tool: Update a vertex with data that is specified in the attributes.
         Prompt: update_vertex_prompt()
         """
         return self.services.upsert_vertex(vertex_type, vertex_id, attributes)
 
 
     def alter_vertex(self, vertex_type:str, operator:Literal["ADD", "DROP"], attributes:dict={}, vector_attributes:dict={}) -> bool:
-        """MCP tool: Alter's vertex attributes.
+        """TigerGraph MCP tool: Alter's vertex attributes.
         """
         return self.services.alter_vertex(vertex_type, operator, attributes, vector_attributes)
 
 
     def define_edge(self, edge_name: str, from_vertex: str, to_vertex: str, edge_type:Literal["UNDIRECTED", "DIRECTED"],
                     attributes: dict = {}, discriminator: dict = {}):
-        """ MCP tool: Define an edge.
+        """ TigerGraph MCP tool: Define an edge.
             Args:
                 edge_name (str): The name of the edge (e.g., 'isPartOf', 'isLocatedIn')
                 from_vertex (str): The name of the from vertex
@@ -127,12 +127,12 @@ class TigerGraph_MCP_Server():
 
     def update_edge(self, source_type: str, source_id: str, edge_type: str,
                     target_type: str, target_id: str, attributes: dict = {}):
-        """MCP tool: update an defined edge between a source and a target vertex."""
+        """TigerGraph MCP tool: update an defined edge between a source and a target vertex."""
         return self.services.upsert_edge(source_type, source_id, edge_type, target_type, target_id, attributes)
 
 
     def get_vertex(self, vertex_type: str, vertex_id: str):
-        """MCP tool: Retrieve a vertex by type and ID."""
+        """TigerGraph MCP tool: Retrieve a vertex by type and ID."""
         return self.services.get_vertex(vertex_type, vertex_id)
 
     # @mcp.tool()
@@ -142,12 +142,12 @@ class TigerGraph_MCP_Server():
 
 
     def get_udf(self, ExprFunctions: bool = True, ExprUtil: bool = True, json_out=False):
-        """MCP tool: Get UDF files."""
+        """TigerGraph MCP tool: Get UDF files."""
         return self.services.get_udf(ExprFunctions, ExprUtil, json_out)
 
 
     def define_vertex_prompt(self) -> str:
-        """ This prompt is designed to be used with a Desktop Agent, like Anthropic Claude.
+        """ TigerGraph MCP prompt: This prompt is designed to be used with a Desktop Agent, like Anthropic Claude.
             Generate a prompt for LLM to define a vertex using the TigerGraph define_vertex api.
         """
         return f"""Using the define_vertex api, define a vertex in TigerGraph using a nested dictionary, with 
@@ -171,7 +171,7 @@ class TigerGraph_MCP_Server():
 
 
     def update_vertex_prompt(self) -> str:
-        """ This prompt is designed to be used with a Desktop Agent, like Anthropic Claude.
+        """ TigerGraph MCP prompt: This prompt is designed to be used with a Desktop Agent, like Anthropic Claude.
             Generate a prompt for LLM to update a vertex using the TigerGraph update_vertex api.
         """
         return f"""Using the update_vertex api,update a vertex in TigerGraph using a vertex_type, vertex_id, and
