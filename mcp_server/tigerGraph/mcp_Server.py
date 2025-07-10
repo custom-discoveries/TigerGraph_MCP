@@ -240,9 +240,8 @@ class TigerGraph_MCP_Server():
         """Run server"""
 
         try:
-            print(f"\n\nWelcom to Custom Discoveries TigerGraph MCP Server - Version {self.version}", file=sys.stderr)
+            print(f"Welcom to Custom Discoveries TigerGraph MCP Server - Version {self.version}", file=sys.stderr)
             print(f"Starting Up TigerGraph MCP Server for Graph {self.services.getGraphName()} ...", file=sys.stderr)
-
  
             self.mcp.run(transport='stdio')
 

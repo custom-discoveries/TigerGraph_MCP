@@ -47,9 +47,7 @@ class TigerGraph_Session():
                 if(self.getConnection().check_exist_graphs(self.graphName) == False):
                     self._createGraph()    
                 else:
-                    results = self.getConnection().getSecrets()
-                    if (results.get(self.getSecretAlias(),None) is None):
-                        self._createSecret(self.getSecretAlias())
+                    self.secretsExists()
                         
         except Exception as error:
             print(f">>> ERROR - TigerGraph server not running {error}: ",file=sys.stderr)
@@ -73,11 +71,22 @@ class TigerGraph_Session():
             if (resultSet.find("created") >=0):
                 self._secret = ''
                 self._token = ''
-                self._createSecret(self.getSecretAlias())
+                self.secretsExists()
             else:
                 return False
-        
         return True
+    #
+    # Resolve the issue that testing to see if Secret Exists only when
+    # creating a new Graph.  This function now allow testing when a graph 
+    # already exists.
+    #
+    def secretsExists(self):
+        results = self.getConnection().getSecrets()
+        if (results.get(self.getSecretAlias(),None) is None):
+            self._createSecret(self.getSecretAlias())
+        else:
+            print(f"TigerGraph Secret Already Exits for Alias: {self.getSecretAlias()}")
+
 
     #
     # Create a Secret and Token for secure connection
