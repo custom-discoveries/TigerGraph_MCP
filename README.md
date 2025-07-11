@@ -14,7 +14,8 @@ language commands!
 7. [Connecting to Claude Desktop](#connecting-to-claude-desktop)
 8. [Contributing](#contributing)  
 9. [License](#license)  
-
+10. [Releases](#Releases)
+    
 ## Requirements
 
  - You will need to run **TigerGraph Version >= 4.2.0**, either in the cloud or in a Docker Image.
@@ -213,4 +214,8 @@ Please ensure all new code is covered by tests and follows PEP-8 style.
 
 ## License
 
-This project is licensed under the **MIT License**.  
+This project is licensed under the **MIT License**.
+
+## Releases
+
+**V2.1** is the latest release that can be found at: https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/V2.1
