@@ -1,6 +1,6 @@
 # TigerGraph-MCP
 
-Custom Discoveries TigerGraph-MCP V2.0 is a community based python Model Context Protocol server that exposes TigerGraph operations (queries, schema, vertices, edges, UDFs) as structured tools, prompts, and URI-based resources for MCP agents. This will allow you to interact with your TigerGraph Database using natural 
+Custom Discoveries TigerGraph-MCP V2.1 is a community based python Model Context Protocol server that exposes TigerGraph operations (queries, schema, vertices, edges, UDFs) as structured tools, prompts, and URI-based resources for MCP agents. This will allow you to interact with your TigerGraph Database using natural 
 language commands!
 
 ## Table of Contents
