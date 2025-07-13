@@ -4,6 +4,7 @@
 .vscode/*
 Output/*
 __pycache__/*
+installPythonEnvironment.sh
 mcp_server/.env
 mcp_server/__pycache__/*
 mcp_server/mcp_chatbot/server_config.json

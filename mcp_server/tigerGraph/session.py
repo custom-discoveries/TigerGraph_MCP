@@ -7,6 +7,9 @@
 #******************************************************************************
 import sys
 import logging
+import traceback
+
+from requests.exceptions import HTTPError
 from pyTigerGraph import TigerGraphConnection
 
 
@@ -48,9 +51,15 @@ class TigerGraph_Session():
                     self._createGraph()    
                 else:
                     self.secretsExists()
-                        
+
+        except HTTPError as error:
+            if error.response.status_code == 401:
+                raise ConnectionError(">>> ERROR - Invalid credentials, please check your TigerGraph username / password.")
+            
+            raise ConnectionError(f">>> ERROR - TigerGraph server not running, {error}: ")
+
         except Exception as error:
-            print(f">>> ERROR - TigerGraph server not running {error}: ",file=sys.stderr)
+             print(f">>> ERROR - TigerGraph server not running, {error}: ",file=sys.stderr)
 
    
     def getConnection(self) -> TigerGraphConnection:
