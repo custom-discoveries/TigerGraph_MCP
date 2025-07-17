@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch, mock_open
 import json
 import os
 from mcp_server.config import tigerGraphConstants
-from mcp_server.tigerGraph.Services import TigerGraphServices  
+from mcp_server.tigerGraph.services import TigerGraphServices  
 
 OUTPUT_PATH = tigerGraphConstants(output=True)
 

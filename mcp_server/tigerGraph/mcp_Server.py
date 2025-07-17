@@ -10,15 +10,13 @@ import csv
 import json
 import warnings
 
-from pathlib import Path
-from datetime import datetime
-from typing import Literal, List
+from typing import Literal
 from mcp.server.fastmcp import FastMCP
 from mcp_server.config import tigerGraphConstants
 from mcp_server.tigerGraph.services import TigerGraphServices
 from mcp_server.tigerGraph.prettyPrintDir import PrettyPrintDirectory
+from mcp_server.mcp_logger import setErrorHandler, logger, logging
 
-import logging
 
 # Disable logger
 warnings.filterwarnings('ignore')
@@ -28,8 +26,9 @@ OUTPUT_DIR = tigerGraphConstants(output=True)
 class TigerGraph_MCP_Server():
     
     def __init__(self):
+        setErrorHandler()
         self.title="Custom Discoveries TigerGraph_MCP_Server"
-        self.version="V2.1"
+        self.version="V3.0"
         self.mcp = FastMCP("TigerGraph MCP Server")
         self.services = TigerGraphServices()
         self.prettyPrintDir:PrettyPrintDirectory = PrettyPrintDirectory(OUTPUT_DIR)
@@ -46,7 +45,12 @@ class TigerGraph_MCP_Server():
         self.mcp.tool()(self.update_edge)
         self.mcp.tool()(self.get_vertex)
         self.mcp.tool()(self.get_udf)
-        
+        if self.services.hasRole("superuser"):
+            self.mcp.tool()(self.displayService_Status)
+            self.mcp.tool()(self.displayDetailed_Service_Status)            
+            self.mcp.tool()(self.displayComponent_Version)
+            self.mcp.tool()(self.displayCPUMemory_Usage)
+            self.mcp.tool()(self.displayDiskSpace_Usage)             
         # Register Prompts directly
         self.mcp.prompt()(self.define_vertex_prompt)
         self.mcp.prompt()(self.update_vertex_prompt)
@@ -56,8 +60,27 @@ class TigerGraph_MCP_Server():
             self.mcp.resource(uri="querydir://listQueries")(self.listQueryDir)
             self.mcp.resource(uri="querydir://{query_file_name}")(self.get_query_output)
         except Exception as error:
-            print(f"Error in initization: {error}")
+            logger.error(f"Error in initization: {error}")
 
+    def displayService_Status(self):
+        """TigerGraph MCP Admin tool: Get TigerGraph Database Status"""
+        return self.services.displayServicesStatus()
+
+    def displayDetailed_Service_Status(self):
+        """TigerGraph MCP Admin tool: Get TigerGraph Database Status"""
+        return self.services.displayDetailedServicesStatus()
+
+    def displayComponent_Version(self):
+        """TigerGraph MCP Admin tool: Get TigerGraph Database Components Version"""
+        return self.services.displayComponentVersion()
+
+    def displayCPUMemory_Usage(self):
+        """TigerGraph MCP Admin tool: Get TigerGraph CPU and Memory Usage"""
+        return self.services.displayCPUMemoryStatus()
+
+    def displayDiskSpace_Usage(self):
+        """TigerGraph MCP Admin tool: Get TigerGraph Disk Space Usage"""
+        return self.services.displayDiskSpaceUsage()
 
     def get_schema(self):
         """TigerGraph MCP tool: Get TigerGraph Schema."""
@@ -246,7 +269,7 @@ class TigerGraph_MCP_Server():
             self.mcp.run(transport='stdio')
 
         except Exception as error:
-            print(f"Error Occured in tg_mcp_server main(): {error}", file=sys.stderr)
+            logger.error(f"Error Occured in tg_mcp_server main(): {error}", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -7,11 +7,12 @@
 from pathlib import Path
 from datetime import datetime
 from typing import List
+from mcp_server.mcp_logger import setErrorHandler, logger
 
 class PrettyPrintDirectory():
 
     def __init__(self, dirPath:str):
-
+        setErrorHandler()
         self.output_path = Path(dirPath)
 
     def getFormatedFileDir(self):
@@ -45,10 +46,10 @@ class PrettyPrintDirectory():
                 return query_output
         
         except PermissionError:
-            print("Error: Permission denied accessing the Output folder")
+            logger.error("Error: Permission denied accessing the Output folder")
             return []
         except Exception as e:
-            print(f"Error listing files: {e}")
+            logger.error(f"Error listing files: {e}")
             return []
 
     def get_file_info(self, file:Path):

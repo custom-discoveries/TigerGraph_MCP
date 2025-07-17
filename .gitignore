@@ -2,7 +2,8 @@
 .venv/*
 .DS_Store
 .vscode/*
-Output/*
+.remote
+Output*/*
 __pycache__/*
 installPythonEnvironment.sh
 mcp_server/.env

@@ -22,7 +22,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from contextlib import AsyncExitStack
 from mcp_server.config import initialLLMConstants
-
+from mcp_server.mcp_logger import setErrorHandler, logger
 warnings.filterwarnings('ignore')
 
 API_KEY, LLM_MODEL, TOKENS, LLM_MODEL_FAMILY, ANTHROPIC, OPENAI = initialLLMConstants()
@@ -30,7 +30,7 @@ API_KEY, LLM_MODEL, TOKENS, LLM_MODEL_FAMILY, ANTHROPIC, OPENAI = initialLLMCons
 class MCP_ChatBot:
 
     def __init__(self):
-        
+        setErrorHandler()
         # Initialize the client with your API key
         if LLM_MODEL_FAMILY == ANTHROPIC:
             self.anthropic = Anthropic(
@@ -122,10 +122,10 @@ class MCP_ChatBot:
                         self.sessions[resource_uri] = session
             
             except Exception as e:
-                print(f"Error {e}", file=sys.stderr)
+                logger.error(f"Error {e}", file=sys.stderr)
                 
         except Exception as e:
-            print(f"Error connecting to {server_name}: {e}")
+            logger.error(f"Error connecting to {server_name}: {e}")
 
     async def connect_to_servers(self):
         try:
@@ -136,7 +136,7 @@ class MCP_ChatBot:
             for server_name, server_config in servers.items():
                     await self.connect_to_mcp_server(server_name, server_config)
         except Exception as e:
-            print(f"Error loading server config: {e}", file=sys.stderr)
+            logger.error(f"Error loading server config: {e}", file=sys.stderr)
             raise
     
     async def process_query(self, query:str):
@@ -152,7 +152,7 @@ class MCP_ChatBot:
                 await self.processAnthropicAIQuery(messages)
 
         except Exception as error:
-            print(f"Error in proess_query() {error}")
+            logger.error(f"Error in proess_query() {error}")
 
     async def processAIAgent(self, query):
         prompt = f""" 1. Take all the necessary steps, using the the tools passed in to answer the request.
@@ -295,7 +295,7 @@ class MCP_ChatBot:
                 print(f"\nExecuting prompt '{prompt_name}'...")
                 await self.process_query(text)
         except Exception as e:
-            print(f"Error: {e}")
+            logger.error(f"Error: {e}")
     
     async def chat_loop(self):
         print("\nWelcome to Custom Discoveries TigerGraph MCP Chatbot!\n")

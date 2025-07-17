@@ -11,7 +11,7 @@ import traceback
 
 from requests.exceptions import HTTPError
 from pyTigerGraph import TigerGraphConnection
-
+from mcp_server.mcp_logger import setErrorHandler, logger
 
 # Suppress all pyTigerGraph logs
 logging.getLogger("pyTigerGraph").setLevel(logging.WARNING)
@@ -31,19 +31,27 @@ class TigerGraph_Session():
     4. Once the session is authenticated it will set a TigerGraph Connection
     """
     def __init__(self):
+        setErrorHandler()
         self.username = USER
         self.password = PASSWORD
         self.graphName = GRAPH
         self._secret = SECRET
         self._token = TOKEN
+        self.host = HOST
 
         try:
+            if self.host.find("tgcloud.io") > 0:
+                self.tgCloud = True
+            else:
+                self.tgCloud = False
+
             self.conn = TigerGraphConnection(
                 host=HOST,
                 graphname=GRAPH,
                 apiToken=TOKEN,
                 username=USER,
-                password=PASSWORD
+                password=PASSWORD,
+                tgCloud=self.tgCloud
             )
             results = self.getConnection().ping()
             if (results['error'] is not True):
@@ -59,15 +67,27 @@ class TigerGraph_Session():
             raise ConnectionError(f">>> ERROR - TigerGraph server not running, {error}: ")
 
         except Exception as error:
-             print(f">>> ERROR - TigerGraph server not running, {error}: ",file=sys.stderr)
+             logger.error(f">>> ERROR - TigerGraph server not running, {error}: ",file=sys.stderr)
 
-   
+    def isRemote(self) -> bool:
+        return self.tgCloud
+    
     def getConnection(self) -> TigerGraphConnection:
         return self.conn
-        
+
+    def getHost(self) -> str:
+        return self.host
+       
     def getSecretAlias(self) -> str:
         return f"{self.username}_{self.graphName}"
 
+    def hasRole(self, roleName:str):
+        
+      results = self.getConnection().gsql(f"SHOW GRANTS OF ROLE {roleName}")
+      if self.username in results:
+          return True
+      else:
+          return False
     #
     # This is a internal function that is called as part of the initialization process
     # If there is no Graph, create one and assign secrect and token to user.
@@ -75,7 +95,7 @@ class TigerGraph_Session():
     def _createGraph(self) -> bool:
         resultSet = {}
         resultSet = self.getConnection().gsql("CREATE GRAPH "+ self.graphName + "(*)")
-        print(resultSet)
+        logger.info(resultSet)
         if isinstance(resultSet,str):
             if (resultSet.find("created") >=0):
                 self._secret = ''
@@ -94,7 +114,7 @@ class TigerGraph_Session():
         if (results.get(self.getSecretAlias(),None) is None):
             self._createSecret(self.getSecretAlias())
         else:
-            print(f"TigerGraph Secret Already Exits for Alias: {self.getSecretAlias()}")
+            logger.info(f"TigerGraph Secret Already Exits for Alias: {self.getSecretAlias()}")
 
 
     #
@@ -133,12 +153,12 @@ class TigerGraph_Session():
                         
 
         except LookupError as error:
-            print("Error:",repr(error),file=sys.stderr)
+            logger.error("Error:",repr(error),file=sys.stderr)
             return False
 
         except Exception as error:
-            print("createSecret/Token Error:",repr(error),file=sys.stderr)
-            #traceback.print_exc()
+            logger.error("createSecret/Token Error:",repr(error),file=sys.stderr)
+            logger.debug(traceback.print_exc())
             return False
 
         return True    

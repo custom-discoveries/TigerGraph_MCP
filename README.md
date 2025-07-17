@@ -1,12 +1,12 @@
 # TigerGraph-MCP
 
-Custom Discoveries TigerGraph-MCP V2.1 is a community based python Model Context Protocol server that exposes TigerGraph operations (queries, schema, vertices, edges, UDFs) as structured tools, prompts, and URI-based resources for MCP agents. This will allow you to interact with your TigerGraph Database using natural 
-language commands!
+Custom Discoveries TigerGraph-MCP V3.0 is a community based python Model Context Protocol server that exposes TigerGraph operations (queries, schema, vertices, edges, UDFs) as structured tools, prompts, and URI-based resources for MCP agents. This will allow you to interact with your TigerGraph Database using natural language commands!
 
 ## Table of Contents
 
 1. [Requirements](#requirements)
-2. [Features](#features)  
+2. [Features](#features)
+3. [Admin Features](#admin-features) **New with V3.0**
 3. [Project Structure](#project-structure)  
 4. [Installation](#installation)  
 5. [Configuration](#configuration-setup)
@@ -19,7 +19,7 @@ language commands!
 ## Requirements
 
  - You will need to run **TigerGraph Version >= 4.2.0**, either in the cloud or in a Docker Image.
- - Make sure to add a TigerGraph dba user and set your password.  Set role to: 'superuser'.
+ - Make sure to add a TigerGraph dba user and set your password.  Set role to: 'superuser' if you want to use the new Admin features
  - Setup local environment with Python >= 3.12 (run the installUVEnvironment.sh script)
 
 ## Features
@@ -45,7 +45,26 @@ language commands!
 - **UDF & Algorithm Listing**  
   Fetch installed user-defined functions and GDS algorithm catalogs.
 
-## Features++ (Kick-Ass Features include)
+## Admin Features
+
+To execute the Admin Features, your database user will need to have the database role of 'superuser'. None of the tools will show up in the /tools list if the user isn't assigned the 'superuser' role.
+
+- **displayService_Status**
+  This tool displays the database service status, show which services are on-line
+
+- **displayDetailed_Service_Status**
+  This tool provides all the detail that tool displayService_Status with addtional information about the Graph to include vertices, edges, and installed queries
+
+- **displayComponent_Version**
+  This tool will display all the versions of the components that make up TigerGraph Server
+
+- **displayCPUMemory_Usage**
+  This tool will display both the CPU and Memory Usage of all the components that make up the TigerGraph Server
+
+- **displayDiskSpace_Usage**
+  This tool will display all the Disk Usage of the different components that make up the TigerGraph database server.
+  
+  ## Features++ (Kick-Ass Features include)
   1. We are including a mcp_chatbot that allow you "chat" with the database. You will need to configure
      two files.  First, you will need to configure the mcp_server/.env file with the LLM you want to use
      (default is Anthropic LLM model) Second, you will need to configure the server_config.json file,
@@ -218,4 +237,4 @@ This project is licensed under the **MIT License**.
 
 ## Releases
 
-**V2.1** is the latest release that can be found at: https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/V2.1
+**V3.0** is the latest release that can be found at: https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/V3.0

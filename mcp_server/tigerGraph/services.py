@@ -10,6 +10,7 @@ import re
 import csv
 import json
 import datetime
+import traceback
 import pandas as pd
 from pathlib import Path
 from typing import Dict, Any, Tuple, Union, Literal
@@ -18,6 +19,8 @@ from pyTigerGraph import TigerGraphConnection
 from mcp_server.config import OUTPUT_PATH, tigerGraphConstants
 from mcp_server.tigerGraph.interface import TigerGraphInterface
 from mcp_server.tigerGraph.session import TigerGraph_Session
+from mcp_server.tigerGraph.system_services import SystemUtilities
+from mcp_server.mcp_logger import setErrorHandler, logger
 #
 #intialize TigerGraph Constants by reading .env file
 #
@@ -34,21 +37,42 @@ class TigerGraphServices(TigerGraphInterface):
     with a user id defined
     """
     def __init__(self):
+        setErrorHandler()
         self.session = TigerGraph_Session()
-        self.session.getConnection()
+        self.adminServices = SystemUtilities(self.session)
         self.initOutputDir()
+
+    def hasRole(self, roleName:str):
+        return self.session.hasRole(roleName)
 
     def initOutputDir(self):
         self.output_path = Path(OUTPUT_PATH)
         if not self.output_path.exists():
             Path.mkdir(self.output_path, exist_ok=True)
 
-
     def getConnection(self) -> TigerGraphConnection:
         return self.session.getConnection()
 
     def getGraphName(self) -> str:
         return self.session.graphName
+
+    def displayServicesStatus(self):
+        return self.adminServices.displayServicesStatus()
+
+    def displayDetailedServicesStatus(self):
+        return self.adminServices.displayDetailedServicesStatus()
+
+
+    def displayComponentVersion(self):
+        return self.adminServices.displayComponentVersion()
+
+    def displayCPUMemoryStatus(self):
+        """Get TigerGraph CPU and Memory Usage"""
+        return self.adminServices.displayCPUMemoryStatus()
+
+    def displayDiskSpaceUsage(self):
+        """Get TigerGraph Disk Space Usage"""
+        return self.adminServices.displayDiskStatus()
 
     def get_schema(self):
         return self.getConnection().getSchema(force=True)
@@ -121,8 +145,8 @@ class TigerGraphServices(TigerGraphInterface):
                     # Write header row
             writer.writerow(header_keys)
         except Exception as e:
-            print(f"Error in _writeCSV_header:")
-            #traceback.print_exc()
+            logger.error(f"Error in _writeCSV_header:")
+            logger.debug(traceback.print_exc())
 
     def _writeCSV_values(self, writer, entry, resultRow):
         try:
@@ -162,8 +186,8 @@ class TigerGraphServices(TigerGraphInterface):
                     writer.writerow(resultRow)
             writer.writerow([])
         except Exception as e:
-            print(f"Error in _writeCSV_values:")
-            #traceback.print_exc()
+            logger.error(f"Error in _writeCSV_values:")
+            logger.debug(traceback.print_exc())
 
     def isResultSetEmpty(self, queryName, results):
         """
@@ -171,7 +195,7 @@ class TigerGraphServices(TigerGraphInterface):
         """
         self.emptyResults=False
         if len(results) == 0 or results is None:
-            print(f"No output found for query {queryName}...", file=sys.stderr)
+            logger.info(f"No output found for query {queryName}...", file=sys.stderr)
             self.emptyResults=True
             return self.emptyResults
 
@@ -185,7 +209,7 @@ class TigerGraphServices(TigerGraphInterface):
                         self.emptyResults = (value == 0)
 
             if self.emptyResults:
-                print(f"No output found for query {queryName}...", file=sys.stderr)
+                logger.info(f"No output found for query {queryName}...", file=sys.stderr)
         return self.emptyResults
 
 
@@ -241,14 +265,14 @@ class TigerGraphServices(TigerGraphInterface):
 
             results = self.getConnection().gsql(gsqlAddVertex,self.getGraphName())
             if isinstance(results, str):
-                print(f"*** Define Vertex Results >>>: {results}", file=sys.stderr)
+                logger.info(f"*** Define Vertex Results >>>: {results}", file=sys.stderr)
 
             dropJob = f"DROP JOB {job_name}"
             results = self.getConnection().gsql(dropJob)
-            print(f"Drop Vertex Results: {results}", file=sys.stderr)
+            logger.info(f"Drop Vertex Results: {results}", file=sys.stderr)
             return True
         except Exception as error:
-            print(f"Error in define_vertex(): {error}", file=sys.stderr)
+            logger.error(f"Error in define_vertex(): {error}", file=sys.stderr)
             return False
 
     def addAttributes(self, attributes:dict, gsql_parts:list, operator:str):
@@ -326,19 +350,19 @@ class TigerGraphServices(TigerGraphInterface):
             gsql_parts.append("}\n")
             gsql_parts.append(f"RUN SCHEMA_CHANGE JOB {job_name}")
             gsqlAlterVertex = "".join(gsql_parts)
-            print(f">>> gsql AlterVertex: {gsqlAlterVertex}", file=sys.stderr)
+            logger.info(f">>> gsql AlterVertex: {gsqlAlterVertex}", file=sys.stderr)
 
             dropJob = f"DROP JOB {job_name}"
             results = self.getConnection().gsql(dropJob)
 
             results = self.getConnection().gsql(gsqlAlterVertex,self.getGraphName())
             if isinstance(results, str):
-                print(f"*** Alter Vertex Results >>>: {results}", file=sys.stderr)
+                logger.info(f"*** Alter Vertex Results >>>: {results}", file=sys.stderr)
                 results = self.getConnection().gsql(dropJob)
             return True
 
         except Exception as error:
-            print(f"Error in alter_vertex(): {error}", file=sys.stderr)
+            logger.error(f"Error in alter_vertex(): {error}", file=sys.stderr)
             return False
 
     def define_edge(self, edge_name: str, from_vertex: str, to_vertex: str, edge_type:Literal["UNDIRECTED", "DIRECTED"],
@@ -391,22 +415,22 @@ class TigerGraphServices(TigerGraphInterface):
             gsql_parts.append(f"RUN SCHEMA_CHANGE JOB {job_name}")
 
             gsqlAddEdge = "".join(gsql_parts)
-            print(f">>> gsql AddVertex: {gsqlAddEdge}", file=sys.stderr)
+            logger.info(f">>> gsql AddVertex: {gsqlAddEdge}", file=sys.stderr)
 
             dropJob = f"DROP JOB {job_name}"
             results = self.getConnection().gsql(dropJob)
 
             results = self.getConnection().gsql(gsqlAddEdge,self.getGraphName())
             if isinstance(results, str):
-                print(f"*** Define Edge Results >>>: {results}", file=sys.stderr)
+                logger.info(f"*** Define Edge Results >>>: {results}", file=sys.stderr)
 
             dropJob = f"DROP JOB {job_name}"
             results = self.getConnection().gsql(dropJob)
-            print(f"Drop Edge Results: {results}", file=sys.stderr)
+            logger.info(f"Drop Edge Results: {results}", file=sys.stderr)
             return True
 
         except Exception as error:
-            print(f"Error in define_edge(), {error}")
+            logger.error(f"Error in define_edge(), {error}")
             return False
 
     def infer_vector_type(self, attr_type):
@@ -488,7 +512,7 @@ class TigerGraphServices(TigerGraphInterface):
                         return DATETIME
                 return STRING
         except ValueError as error:
-            print(f"ERROR in gsql_type {error}")
+            logger.error(f"ERROR in gsql_type {error}")
 
 
     def upsert_vertex(self, vertex_type: str, vertex_id: str, attributes: dict) -> int:
