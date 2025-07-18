@@ -155,11 +155,9 @@ class MCP_ChatBot:
             logger.error(f"Error in proess_query() {error}")
 
     async def processAIAgent(self, query):
-        prompt = f""" 1. Take all the necessary steps, using the the tools passed in to answer the request.
-                      2. Take the output query and please convert it into a clear, human-readable summary 
-                      using bullet points or formatted sections where appropriate.
-                      {query}
-                      """
+        prompt = f"""1. Use only the tool that is passed in as part of the query, to answer the request.
+2. Transform the query results into a well-organized, easy-to-read format. Use clear headings, bullet points, tables, or other formatting elements to make the information accessible and logically structured.
+3. Query to Analysis: {query}"""
 
         response = await self.agent.ainvoke({"messages": prompt})
         answer = response['messages'][len(response['messages'])-1].content
