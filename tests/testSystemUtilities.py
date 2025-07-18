@@ -1,3 +1,9 @@
+#********************************************************************************************
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
+# All rights reserved.
+# testSystemUtilities.py: This test case performs mock checks against the SystemUtilities class
+#*********************************************************************************************
+
 import unittest
 from unittest.mock import MagicMock
 from mcp_server.tigerGraph.services import TigerGraph_Session

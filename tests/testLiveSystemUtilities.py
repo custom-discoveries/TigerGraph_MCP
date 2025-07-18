@@ -1,7 +1,13 @@
+#******************************************************************************
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
+# All rights reserved.
+# testLiveSystemUtilities.py: Test cast for live test with TigerGraph database
+# that is configured in the .env file
+#******************************************************************************
+
 import unittest
 import logging
 
-from unittest.mock import MagicMock
 from mcp_server.tigerGraph.services import TigerGraph_Session
 from mcp_server.tigerGraph.system_services import SystemUtilities
 from mcp_server.mcp_logger import setErrorHandler, logger

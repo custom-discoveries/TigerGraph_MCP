@@ -1,10 +1,23 @@
+#******************************************************************************
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
+# All rights reserved.
+#
+# exampleTestIntegrationQueryRun.py: This test case is a "live" test that 
+# connects to the TigerGraph database and allows you to define your own 
+# queries to test. You will need to copy the exampleTestIntegrationQueryRun 
+# to testIntegrationQueryRun.py (so as not to update the GitHub respository 
+# with your changes)
+#******************************************************************************
+
 import unittest
 import json
 import os
 import time
 from unittest import skip
 from mcp_server.config import tigerGraphConstants
-from mcp_server.tigerGraph.services import TigerGraphServices  
+from mcp_server.tigerGraph.services import TigerGraphServices
+from mcp_server.mcp_logger import setErrorHandler, logger
+
 HOST, GRAPH, USER, PASSWORD, SECRET, TOKEN = tigerGraphConstants()
 
 
@@ -22,6 +35,7 @@ class TestRunQueryIntegration(unittest.TestCase):
         """Set up test fixtures for the entire test class."""
         
         # Initialize the class instance with real database connection
+        setErrorHandler()
         cls.OUTPUT_PATH = tigerGraphConstants(output=True)
         cls.db_instance = TigerGraphServices()
         
@@ -294,4 +308,4 @@ if __name__ == '__main__':
         #runSingleTest('test_run_query_creates_json_file_with_real_data')
         unittest.main(verbosity=2)       
     else:
-        print("Integration tests skipped. Set RUN_INTEGRATION_TESTS=true to run.")
+        logger.info("Integration tests skipped. Set RUN_INTEGRATION_TESTS=true to run.")

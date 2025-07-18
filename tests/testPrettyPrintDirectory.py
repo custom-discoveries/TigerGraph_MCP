@@ -1,13 +1,22 @@
+#******************************************************************************
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
+# All rights reserved.
+# testPrettyPrintDireectory.py: This test case performs checks on the 
+# PrettyPrintDirectory class
+#******************************************************************************
+
 import unittest
 import tempfile
 import shutil
 from pathlib import Path
 from datetime import datetime
 from mcp_server.tigerGraph.prettyPrintDir import PrettyPrintDirectory
+from mcp_server.mcp_logger import setErrorHandler, logger, logging
 
 class TestPrettyPrintDirectory(unittest.TestCase):
     def setUp(self):
         # Create a temporary directory and add test files
+        setErrorHandler()
         self.test_dir = tempfile.mkdtemp()
         self.test_file_1 = Path(self.test_dir) / "file1.txt"
         self.test_file_2 = Path(self.test_dir) / "file2.log"
@@ -49,6 +58,8 @@ class TestPrettyPrintDirectory(unittest.TestCase):
 
     def test_get_list_files(self):
         files = self.printer.get_list_files(Path(self.test_dir))
+        if logger.level == logging.DEBUG:
+            logger.debug(files)
         self.assertEqual(len(files), 2)
         self.assertTrue(all(isinstance(f, Path) for f in files))
 

@@ -1,3 +1,9 @@
+#******************************************************************************
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
+# All rights reserved.
+# testQueryRun.py: This is a mocked up version to run against the run_query service.
+#******************************************************************************
+
 import unittest
 from unittest.mock import Mock, patch, mock_open
 import json

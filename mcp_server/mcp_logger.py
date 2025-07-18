@@ -1,3 +1,9 @@
+#******************************************************************************
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
+# All rights reserved.
+# mcp_logger.py: Sets up the log handler and sets Logging Level to ERROR
+#******************************************************************************
+
 import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
