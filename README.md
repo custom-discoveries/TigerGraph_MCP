@@ -53,7 +53,7 @@ To execute the Admin Features, your database user will need to have the database
   This tool displays the database service status, show which services are on-line
 
 - **displayDetailed_Service_Status**
-  This tool provides all the detail that tool displayDetailed_Service_Status with additional information about the Graph to include vertices, edges, and installed queries
+  This tool provides all the detail that tool displayService_Status with additional information about the Graph to include vertices, edges, and installed queries
 
 - **displayComponent_Version**
   This tool will display all the versions of the components that make up TigerGraph Server
