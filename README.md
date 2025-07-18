@@ -105,6 +105,7 @@ TigerGraph-MCP/
 ├── mcp_server
       ├── .env                # TigerGraph (HOST, GRAPH, SECRET) & LLM configuration paramaters
       ├── config.py           # Reads environment config file (.env) and defines System Constants
+      ├── mcp_logger.py       # Sets up the log handler and sets Logging Level to ERROR 
       ├── mcp_chatbot
             ├── mcp_chatbot.py     # Chatbot for LLM to interact with TigerGraph MCP Server (uses .env file)
             ├── server_config.json # Configuration file to define TigerGraph MCP Server
@@ -115,7 +116,9 @@ TigerGraph-MCP/
             ├── services.py       # Implement service calls to TigerGraph database
             ├── session.py        # Encapsulates TigerGraphConnection and core session operations
        
-├── Output                    # Output directory where Query outputs are written (.csv or .json format)       
+├── Outputs                   # Output directory where Query outputs are written (.csv or .json format)
+├── tests                     # test directory which containts all the tests cases written
+    ├── README.md             # ReadMe file that has all the descriptions of the test cases in the tests directory
 ├── pyproject.toml            # Project metadata & dependencies
 ├── README.md                 # This markdown README file
 ├── requirements.txt          # Python package dependencies
