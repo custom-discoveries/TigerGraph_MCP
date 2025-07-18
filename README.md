@@ -6,7 +6,7 @@ Custom Discoveries TigerGraph-MCP V3.0 is a community based python Model Context
 
 1. [Requirements](#requirements)
 2. [Features](#features)
-3. [Admin Features](#admin-features) **New with V3.0**
+3. [Admin Features](#admin-features) (**New with V3.0**)
 3. [Project Structure](#project-structure)  
 4. [Installation](#installation)  
 5. [Configuration](#configuration-setup)
@@ -237,4 +237,4 @@ This project is licensed under the **MIT License**.
 
 ## Releases
 
-**V3.0** is the latest release that can be found at: https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/V3.0
+**V3.0** is the latest release that can be found at:[ https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/V3.0](https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/v3.0)
