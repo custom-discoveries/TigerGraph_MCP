@@ -11,5 +11,9 @@ mcp_server/__pycache__/*
 mcp_server/mcp_chatbot/server_config.json
 mcp_server/mcp_chatbot/__pycache__/*
 mcp_server/tigerGraph/__pycache__/*
+mcp_server/agents/__pycache__/*
+mcp_server/agents/ag2/__pycache__/*
+mcp_server/agents/prompts/__pycache__/*
+mcp_server/agents/toolBoxes/__pycache__/*
 tests/testIntegrationQueryRun.py
 uv.lock

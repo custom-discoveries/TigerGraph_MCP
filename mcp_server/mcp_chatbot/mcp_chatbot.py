@@ -3,233 +3,205 @@
 # All rights reserved.
 # mcp_chatbot.py: This modelue defines the Custom Discoveries  MCP ChatBot
 #******************************************************************************
-import json
 import asyncio
-import sys
-import os
 import warnings
+import traceback
 
-from typing import List
-from anthropic import Anthropic
+from typing import List, Optional
 from anthropic.types import MessageParam
-from openai import OpenAI
-from langchain_openai import ChatOpenAI
-from langchain_mcp_adapters.tools import load_mcp_tools
-from langgraph.prebuilt import create_react_agent
-from langgraph.graph.state import CompiledStateGraph
-from langchain_community.agent_toolkits.load_tools import load_tools, get_all_tool_names
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
-from contextlib import AsyncExitStack
-from mcp_server.config import initialLLMConstants
-from mcp_server.mcp_logger import setErrorHandler, logger
-warnings.filterwarnings('ignore')
+from autogen.events.agent_events import TextEvent
+from mcp.shared.exceptions import McpError
+from mcp_server.mcp_chatbot.mcp_services import MCPServer, MCPServices
+from mcp_server.mcp_logger import setErrorHandler, logger, logging
+from mcp_server.agents.ag2.chatAgent import ChatAgent
 
-API_KEY, LLM_MODEL, TOKENS, LLM_MODEL_FAMILY, ANTHROPIC, OPENAI = initialLLMConstants()
+warnings.filterwarnings('ignore')
+# Turn off specific library logging
+
+logging.getLogger("Client").disabled = True
+logging.getLogger("ag2").setLevel(logging.ERROR)
+logging.getLogger('mcp.server.lowlevel.server').disabled = True
+
+VERSION=3.1
 
 class MCP_ChatBot:
 
     def __init__(self):
+
+        self.mcpServices: dict[str, MCPServices] = {}
+
+        # Hold mapping of resource name to resource url
+        self.resourceURL={}
+
         setErrorHandler()
         # Initialize the client with your API key
-        if LLM_MODEL_FAMILY == ANTHROPIC:
-            self.anthropic = Anthropic(
-                api_key=API_KEY  # Get this from console.anthropic.com
-            )
-
-        elif  LLM_MODEL_FAMILY == OPENAI:
-            self.openAI = OpenAI(
-                api_key=API_KEY
-            )
-
-        self.exit_stack = AsyncExitStack()
-        # Tools list required for Anthropic API
-        self.available_tools = []
-        # Prompts list for quick display 
-        self.available_prompts = []
-        # Sessions dict maps tool/prompt names or resource URIs to MCP client sessions
-        self.sessions = {}
-    
-    def getAgent(self) -> CompiledStateGraph:
+            
+    def getAgent(self) -> ChatAgent:
         return self.agent
     
-    def setAgent(self,agent:CompiledStateGraph):
-        self.agent = agent
+    def setAgent(self,mcpServices:MCPServices):
+        self.agent = ChatAgent(mcpServices)
 
-    def getTokens(self) -> int:
-        return TOKENS
 
-    def getModel(self):
-        return LLM_MODEL
-
-    async def initialize_langChain_agent(self, tools):
-        ChatAgent(self,tools)
-        #self.agent.get_graph().draw_mermaid_png(output_file_path="./ai_graph_output.png")
-
-    async def connect_to_mcp_server(self, server_name, server_config):
+    async def initialize_mcp_services(self, mcp_sessions:dict):
         try:
-            server_params = StdioServerParameters(**server_config)
-            stdio_transport = await self.exit_stack.enter_async_context(
-                stdio_client(server_params)
-            )
-            read, write = stdio_transport
-            session = await self.exit_stack.enter_async_context(
-                ClientSession(read, write)
-            )
-            # Initialize the connection
-            await session.initialize()
-            
-            try:
+
+            for server_name, session in mcp_sessions.items():              
+                mcpServices = MCPServices(server_name)
+                self.mcpServices[server_name]=mcpServices
+                                
                 # List available tools
-                response = await session.list_tools()
-                if LLM_MODEL_FAMILY == ANTHROPIC:
-                    for tool in response.tools:
-                        self.sessions[tool.name] = session
-                        self.available_tools.append({
-                            "name": tool.name,
-                            "description": tool.description,
-                            "input_schema": tool.inputSchema
-                        })
-                elif LLM_MODEL_FAMILY == OPENAI:
-                    tools = await load_mcp_tools(session)
-                    for tool in tools:
-                        self.available_tools.append( {
-                                        "type": "function",
-                                        "function": { "name":tool.name,
-                                        "description":tool.description,
-                                        "properties": {"type": tool.tool_call_schema["properties"]} 
-                                        }
-                    })                       
-                    await self.initialize_langChain_agent(tools)
-                else:
-                    raise ProcessLookupError("Error in connect_to_mcp_server(), no valid LLM_MODEL_FAMILY specified!")
+                await mcpServices.setToolList(session)
 
                 # List available prompts
-                prompts_response = await session.list_prompts()
-                if prompts_response and prompts_response.prompts:
-                    for prompt in prompts_response.prompts:
-                        self.sessions[prompt.name] = session
-                        self.available_prompts.append({
-                            "name": prompt.name,
-                            "description": prompt.description,
-                            "arguments": prompt.arguments
-                        })
-                # List available resources
-                resources_response = await session.list_resources()
-                if resources_response and resources_response.resources:
-                    for resource in resources_response.resources:
-                        resource_uri = str(resource.uri)
-                        self.sessions[resource_uri] = session
-            
-            except Exception as e:
-                logger.error(f"Error {e}", file=sys.stderr)
-                
-        except Exception as e:
-            logger.error(f"Error connecting to {server_name}: {e}")
+                await mcpServices.setPromptList(session)
 
-    async def connect_to_servers(self):
-        try:
-            with open(f"{os.getcwd()}/mcp_server/mcp_chatbot/server_config.json", "r") as file:
-                data = json.load(file)
-                servers = data.get("tigerGraph_MCP_Server", {})
-                   
-            for server_name, server_config in servers.items():
-                    await self.connect_to_mcp_server(server_name, server_config)
-        except Exception as e:
-            logger.error(f"Error loading server config: {e}", file=sys.stderr)
-            raise
+                # List available resources
+                await mcpServices.setResourcesList(session)
+
+        except Exception as error:
+            #traceback.print_exc()
+            logger.error(f"Error in initialize_mcp_services({server_name}) {error}")
     
     async def process_query(self, query:str):
-
 
         messages: List[MessageParam] = [{'role': 'user', 'content': query}]
 
         try:
-            if  LLM_MODEL_FAMILY == OPENAI:
-                await self.processAIAgent(query)
-
-            elif LLM_MODEL_FAMILY == ANTHROPIC:
-                await self.processAnthropicAIQuery(messages)
+            
+            await self.processAIAgent(query)
 
         except Exception as error:
             logger.error(f"Error in proess_query() {error}")
 
-    async def processAIAgent(self, query):
-        prompt = f"""1. Use only the tool that is passed in as part of the query, to answer the request.
-2. Transform the query results into a well-organized, easy-to-read format. Use clear headings, bullet points, tables, or other formatting elements to make the information accessible and logically structured.
-3. Query to Analysis: {query}"""
+    async def processAIAgent(self, query="search for papers on knowledge graphs"):
 
-        response = await self.agent.ainvoke({"messages": prompt})
-        answer = response['messages'][len(response['messages'])-1].content
-        #print(f"Number of steps executed: {len(response['messages'])}\n")
-        print(answer)
+        try:
+            response = await self.getAgent().callMCPAgent(query)
+            self.printResponse(response)
 
-    async def processAnthropicAIQuery(self, messages):
-        response=""
-        response_content=""
+        except Exception as error:
+            #traceback.print_exc()
+            logger.error(f"Error in processAIAgent() {error}")
 
-        while True:
-            try:
-                response = self.anthropic.messages.create(
-                                max_tokens = self.getTokens(),
-                                model = self.getModel(), 
-                                tools = self.available_tools,
-                                messages = messages
-                            )
+    def printResponse(self, response):
+        if not isinstance(response,str):
+            for event in response.events:
+                if isinstance(event,TextEvent):
+                    if event.content.recipient == "user":
+                        event.print()
+        else:
+            print(response)
 
-                has_tool_use = False
-                assistant_content = []
 
-                response_content = response.content
-                for content in response_content:
-                    if content.type == 'text':
-                        print(content.text)
-                        assistant_content.append(content)
-                    elif content.type == 'tool_use':
-                        has_tool_use = True
-                        assistant_content.append(content)
-                        messages.append({'role':'assistant', 'content':assistant_content})
-                        
-                        # Get session and call tool
-                        session = self.sessions.get(content.name)
-                        if not session:
-                            print(f"Tool '{content.name}' not found.")
-                            break
-                            
-                        result = await session.call_tool(content.name, arguments=content.input)
-                        messages.append({
-                            "role": "user", 
-                            "content": [
-                                {
-                                    "type": "tool_result",
-                                    "tool_use_id": content.id,
-                                    "content": result.content
-                                }
-                            ]
-                        })
-                # Exit loop if no tool was used
-                if not has_tool_use:
-                    break
-            except Exception as error:
-                raise ProcessLookupError(f"Error in processOpenAiQuery(): {error}")
+    def getToolNamesToString(self) -> str:
+        formatted_tools="\n"
+        total_tool_list:List = []
+        #
+        # Loop through all of the MCP Services (Servers) and 
+        # get a complete list of all the tools that are connected
+        #
+        for mcp_services in self.mcpServices.values():
+            total_tool_list.extend(mcp_services.getToolDescription())
+
+        for i, tool in enumerate(total_tool_list):
+            formatted_tools = f"{formatted_tools}{i+1}. {tool.get('server')}, {tool.get('name')}, valid_parameters:"
+            if len(tool.get('properties')) == 0:
+                formatted_tools = (f"{formatted_tools}None")
+            else:
+                for x, param in enumerate(tool.get('properties')):
+                    comma = "," if x < (len(tool.get('properties'))-1) else ""
+                    formatted_tools = (f"{formatted_tools} {param}{comma}")
+
+                formatted_tools = f"{formatted_tools}, required_params:"
+                for x, param in enumerate(tool.get('required_params')):
+                    comma = "," if x < (len(tool.get('required_params'))-1) else ""
+                    formatted_tools = (f"{formatted_tools} {param}{comma}")
+
+            formatted_tools = f"{formatted_tools}\n"
+
+
+        return formatted_tools
+
+
+    def getAllTools(self,server_name:Optional[str]="") -> List[str]:
         
-        return response
-
-    async def get_resource(self, resource_uri):
-        session = self.sessions.get(resource_uri)
+        total_tool_list:List = []
+        #
+        # Loop through all of the MCP Services (Servers) and 
+        # get a complete list of all the tool descriptions
+        #
+        if server_name == "":
+            for mcp_services in self.getAgent().getMCPServices().values():
+                total_tool_list.extend(mcp_services.getToolDescription())
         
-        # Fallback for papers URIs - try any papers resource session
-        if not session and resource_uri.startswith("querydir://"):
-            for uri, sess in self.sessions.items():
-                if uri.startswith("querydir://"):
-                    session = sess
-                    break
+            return total_tool_list
+        else: 
+        #
+        # Lookup MCP Services by name and return the 
+        # tool descriptions for that service
+        #            
+            mcp_services:MCPServices = self.getAgent().getMCPServices().get(server_name,"")
+            if mcp_services:
+                return mcp_services.getToolDescription()
+            else:
+                print(f"No Services found for: {server_name}")
+
+    def getAllPrompts(self,server_name:Optional[str]="") -> List[str]:
+        
+        total_prompt_list:List = []
+        #
+        # Loop through all of the MCP Services (Servers) and 
+        # get a complete list of all the prompt descriptions
+        #
+        if server_name == "":
+            for mcp_services in self.mcpServices.values():
+                total_prompt_list.extend(mcp_services.getPromptDescription())
+        
+            return total_prompt_list
+        else: 
+        #
+        # Lookup MCP Services by name and return the 
+        # tool descriptions for that service
+        #            
+            mcp_services:MCPServices = self.mcpServices.get(server_name,"")
+            if mcp_services:
+                return mcp_services.getPromptDescription()
+            else:
+                print(f"No Services found for: {server_name}")
+
+    def getAllResources(self,url_name:Optional[str]="") -> List[str]:
+        
+        total_resources_list:List = []
+        #
+        # Loop through all of the MCP Services (Servers) and 
+        # get a complete list of all the resources descriptions
+        #
+        if url_name == "":
+            for mcp_services in self.mcpServices.values():
+                total_resources_list.extend(mcp_services.getResourcesList())
+        
+            return total_resources_list
+        else: 
+        #
+        # Lookup MCP Services by name and return the 
+        # tool descriptions for that service
+        #            
+            for mcp_services in self.mcpServices.values():
+                session = mcp_services.getResourceSession(url_name)
+                if session is not None:
+                    return session
             
+            if session is None:
+                print(f"No MCP Resources found for: {url_name}")
+
+    async def get_resource(self, resource_uri, session):
+        
         if not session:
             print(f"Resource '{resource_uri}' not found.")
             return
         
-        try:
+        try:      
             result = await session.read_resource(uri=resource_uri)
             if result and result.contents:
                 print(f"\nResource: {resource_uri}")
@@ -237,30 +209,40 @@ class MCP_ChatBot:
                 print(result.contents[0].text)
             else:
                 print("No content available.")
+        except McpError as error:
+            print(f"MCP Session Read Error: {error}")
         except Exception as e:
             print(f"Error: {e}")
 
-    async def list_tools(self):
-        """List all available prompts."""
-        if not self.available_tools:
+    async def list_tools(self,server_name:Optional[str]=""):
+        """List all available tools."""
+
+        listOfTools = self.getAllTools(server_name)
+        if not listOfTools:
             print("No Tools available.")
             return
         
         print("\nAvailable Tools:")
-        for tool in self.available_tools:
-            if LLM_MODEL_FAMILY == ANTHROPIC:
-                print(f"- {tool['name']}: {tool['description']}")
-            else:  
-                print(f"- {tool['function']['name']}: {tool['function']['description']}")
+        header = None
+        for tool in listOfTools:
 
-    async def list_prompts(self):
+            if header != tool['server']:
+                print(f"Server: {tool['server']}\n")
+                print(f" - Name: {tool['name']}\n - Required Parameters: {tool.get("required_params")}\n - Description: {tool['description']}\n")
+            else:
+                print(f" - Name: {tool['name']}\n - Required Parameters: {tool.get("required_params")}\n - Description: {tool['description']}\n")
+
+            header = tool['server']    
+
+    async def list_prompts(self,server_name:Optional[str]=""):
         """List all available prompts."""
-        if not self.available_prompts:
+        listOfPrompts = self.getAllPrompts(server_name)
+        if not listOfPrompts:
             print("No prompts available.")
             return
         
         print("\nAvailable prompts:")
-        for prompt in self.available_prompts:
+        for prompt in listOfPrompts:
             print(f"- {prompt['name']}: {prompt['description']}")
             if prompt['arguments']:
                 print(f"  Arguments:")
@@ -296,13 +278,14 @@ class MCP_ChatBot:
             logger.error(f"Error: {e}")
     
     async def chat_loop(self):
-        print("\nWelcome to Custom Discoveries TigerGraph MCP Chatbot!\n")
-        print("Type your queries or type ['quit'|'exit'] to exit.")    
-        print("Use @listQueries to see available Query Output Files")
-        print("Use @<query_file_name> list content of Query file")            
-        print("Use /tools to list available tools")
-        print("Use /prompts to list available prompts")
-        
+
+        print(f"\n\nWelcome to Custom Discoveries MCP Chatbot {VERSION}\n")
+        print("\nType your queries or type ['quit'|'exit'] to exit.")   
+        self.printChatMenu()            
+
+        self.setAgent(self.mcpServices)
+        self.initializeResourceNames()
+
         while True:
             try:
                 query = input("\nQuery: ").strip()
@@ -315,22 +298,45 @@ class MCP_ChatBot:
                 # Check for @resource syntax first
                 if query.startswith('@'):
                     # Remove @ sign  
-                    query_file_name = query[1:]
-                    if query_file_name == "listQueries":
-                        resource_uri = "querydir://listQueries"
+                    resource_uri=""
+                    temp_query = query[1:]
+                    query_array = temp_query.split(" ")
+                    index = len(query_array)
+                    query_name = query_array[0]
+                    resource_uri:str = self.resourceURL.get(query_name)
+                    session = self.getAllResources(resource_uri)
+                    if resource_uri is not None:
+                        if (index > 1):
+                            uriIndex = resource_uri.find("//")
+                            resource_uri = f"{resource_uri[:uriIndex+2]}{query_array[1]}"
+                        await self.get_resource(resource_uri, session, )
                     else:
-                        resource_uri = f"querydir://{query_file_name}"
-                    await self.get_resource(resource_uri)
+                        logger.warning(f"No Resource {query_name} Found!")
                     continue
                 
                 # Check for /command syntax
                 if query.startswith('/'):
                     parts = query.split()
                     command = parts[0].lower()
-                    if command == '/tools':
-                        await self.list_tools()
+
+                    if command == '/help':
+                        self.printChatMenu()
+
+                    elif command == '/tools':
+                        if len(parts) > 1:
+                            await self.list_tools(parts[1])
+                        else:
+                            await self.list_tools()
+ 
                     elif command == '/prompts':
                         await self.list_prompts()
+ 
+                    elif command == '/resources':
+
+                        print("\nList of Resources:")
+                        for item in self.resourceURL:
+                            print(f"  {item}")
+
                     elif command == '/prompt':
                         if len(parts) < 2:
                             print("Usage: /prompt <name> <arg1=value1> <arg2=value2>")
@@ -354,36 +360,38 @@ class MCP_ChatBot:
                     
             except Exception as e:
                 print(f"\nError: {str(e)}")
+
+    def printChatMenu(self):
+ 
+        print("\nUse /tools to list available tools")
+        print("Use /prompts to list available prompts")
+        print("Use /resources to list available resources")
+        print("Use /help to reprint this menu")
+        print("\nUse @listOutput to see available TigerGraph Query Output Files")
+        print("Use @listOutput <query_file_name> list content of TigerGraph Query Output file")
+
+    def initializeResourceNames(self):
+        resources = self.getAllResources()
+        for item in resources:
+            index = item.find("//")
+            self.resourceURL[item[index+2:]]=item
     
-    async def cleanup(self):
-        await self.exit_stack.aclose()
+    async def cleanup(self, mcpServer:MCPServer):
+        await mcpServer.exit_stack.aclose()
 
     async def main(self):
 
+        mcpServer = MCPServer()
+
         try:
-            await self.connect_to_servers()
+            await mcpServer.connect_to_servers()
+            await self.initialize_mcp_services(mcpServer.mcp_sessions)
             await self.chat_loop()
         finally:
-            await self.cleanup()
+            await self.cleanup(mcpServer)
 
-class ChatAgent:
-    """
-    ChatAgent class is used to support langchain Agent based soltuion
-
-    """
-    def __init__(self, client:MCP_ChatBot, tools:List):
-        self.agent = create_react_agent(self.getLLMModel(), tools)
-        client.setAgent(self.agent)
-
-    def getLLMModel(self):
-        return(ChatOpenAI(temperature=0, model=LLM_MODEL))
-        
-    def list_BuiltIn_tools(self):
-        return print(f"List of Tools: {json.dumps(get_all_tool_names(), indent=4, ensure_ascii=False) }")
 
 if __name__ == "__main__":
 
     chatbot = MCP_ChatBot()
-    # agent = ChatAgent(chatbot,[])
-    # agent.list_BuiltIn_tools()
     asyncio.run(chatbot.main())

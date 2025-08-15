@@ -10,7 +10,7 @@ import csv
 import json
 import warnings
 
-from typing import Literal
+from typing import Literal, Optional
 from mcp.server.fastmcp import FastMCP
 from mcp_server.config import tigerGraphConstants
 from mcp_server.tigerGraph.services import TigerGraphServices
@@ -28,7 +28,7 @@ class TigerGraph_MCP_Server():
     def __init__(self):
         setErrorHandler()
         self.title="Custom Discoveries TigerGraph_MCP_Server"
-        self.version="V3.0"
+        self.version="V3.1"
         self.mcp = FastMCP("TigerGraph MCP Server")
         self.services = TigerGraphServices()
         self.prettyPrintDir:PrettyPrintDirectory = PrettyPrintDirectory(OUTPUT_DIR)
@@ -47,18 +47,20 @@ class TigerGraph_MCP_Server():
         self.mcp.tool()(self.get_udf)
         if self.services.hasRole("superuser"):
             self.mcp.tool()(self.displayService_Status)
-            self.mcp.tool()(self.displayDetailed_Service_Status)            
+            self.mcp.tool()(self.displayDetailed_Service_Status)
             self.mcp.tool()(self.displayComponent_Version)
             self.mcp.tool()(self.displayCPUMemory_Usage)
-            self.mcp.tool()(self.displayDiskSpace_Usage)             
+            self.mcp.tool()(self.displayDiskSpace_Usage)
         # Register Prompts directly
         self.mcp.prompt()(self.define_vertex_prompt)
         self.mcp.prompt()(self.update_vertex_prompt)
 
         #Register Resources directly
         try:
-            self.mcp.resource(uri="querydir://listQueries")(self.listQueryDir)
-            self.mcp.resource(uri="querydir://{query_file_name}")(self.get_query_output)
+
+            self.mcp.resource(uri="listdir://listOutput")(self.listQueryDir)
+            self.mcp.resource(uri="listdir://{query_name}")(self.listQueryOutput)
+
         except Exception as error:
             logger.error(f"Error in initization: {error}")
 
@@ -212,7 +214,6 @@ class TigerGraph_MCP_Server():
     def listQueryDir(self) -> str:
         """
         List all available query out files in directory.
-        
         This resource provides a simple list of all available query output files.
         """
         query_output = []
@@ -229,24 +230,26 @@ class TigerGraph_MCP_Server():
         return content
 
     
-    def get_query_output(self,query_file_name: str) -> str:
+    def listQueryOutput(self,query_name) -> str:
         """
         Get the contentd of the query output.
         Args:
             query_name: Name of query file to read
         """
+        #query_name: str = ""
         output_dir = OUTPUT_DIR
-        query_output_file = os.path.join(output_dir, query_file_name)
+        query_output_file = os.path.join(output_dir, query_name)
         
         if not os.path.exists(query_output_file):
-            return f"# No Query Output found for: {query_file_name}\n\n"
+            return f"# No Query Output found for: {query_name}\n\n"
         
         try:
-            if query_file_name.endswith(".json"):
+            if query_name.endswith(".json"):
                 with open(query_output_file, 'r') as f:
                     query_data = json.load(f)
                 return json.dumps(query_data,indent=4, separators=(',',':'))    
-            elif query_file_name.endswith(".csv"):
+            
+            elif query_name.endswith(".csv"):
                 data = []
                 with open(query_output_file, 'r', newline='', encoding='utf-8') as file:
                     csv_reader = csv.DictReader(file)
@@ -256,15 +259,15 @@ class TigerGraph_MCP_Server():
                 return json.dumps(data,indent=4, separators=(',',':'))
             
         except Exception as error:
-            return f"# Error {error} reading query data for {query_file_name}\n"
+            return f"# Error {error} reading query data for {query_name}\n"
 
 
     def run_server(self):
         """Run server"""
 
         try:
-            print(f"Welcom to Custom Discoveries TigerGraph MCP Server - Version {self.version}", file=sys.stderr)
-            print(f"Starting Up TigerGraph MCP Server for Graph {self.services.getGraphName()} ...", file=sys.stderr)
+            print(f"\nWelcome to Custom Discoveries TigerGraph MCP Server - Version {self.version}", file=sys.stderr)
+            print(f"Starting Up TigerGraph MCP Server for Graph {self.services.getGraphName()} ...\n", file=sys.stderr)
  
             self.mcp.run(transport='stdio')
 
