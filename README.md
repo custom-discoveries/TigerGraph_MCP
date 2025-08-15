@@ -1,6 +1,6 @@
 # TigerGraph-MCP
 
-Custom Discoveries TigerGraph-MCP V3.0 is a community based python Model Context Protocol server that exposes TigerGraph operations (queries, schema, vertices, edges, UDFs) as structured tools, prompts, and URI-based resources for MCP agents. This will allow you to interact with your TigerGraph Database using natural language commands!
+Custom Discoveries TigerGraph-MCP V3.1 is a community based python Model Context Protocol server that exposes TigerGraph operations (queries, schema, vertices, edges, UDFs) as structured tools, prompts, and URI-based resources for MCP agents. This will allow you to interact with your TigerGraph Database using natural language commands!
 
 ## Table of Contents
 
@@ -76,7 +76,7 @@ To execute the Admin Features, your database user will need to have the database
        - /prompts to list the available prompts under the mcp server
        - /resources is a **planned future enhancment**
   
-  2. Custom Discoveries TigerGraph-MCP V2.0 now includes enhanced functionality for exporting 
+  2. Custom Discoveries TigerGraph-MCP V3.1 now includes enhanced functionality for exporting 
      query results to CSV or JSON file formats within a designated output directory. This output
      directory can be configured through the mcp_server/.env file, with the default location 
      set to ./Output.
@@ -105,7 +105,15 @@ TigerGraph-MCP/
 ├── mcp_server
       ├── .env                # TigerGraph (HOST, GRAPH, SECRET) & LLM configuration paramaters
       ├── config.py           # Reads environment config file (.env) and defines System Constants
-      ├── mcp_logger.py       # Sets up the log handler and sets Logging Level to ERROR 
+      ├── mcp_logger.py       # Sets up the log handler and sets Logging Level to ERROR
+      ├── agents
+            ├── ag2                # Directory that holds AG2 Agents
+                 ├── chatAgent.py  # Chatbot using AG2 agent framework for LLM
+            ├── agent_interface.py # Interface for implementing ChatAgent
+            ├── prompts            # Directory that holds AG2 Agent prompts
+                  ├── toolKitPrompt.py  # Prompts used by AG2 agent
+            ├── toolBoxes          # Directory that holds AG2 Agent functions / "tools"
+                  ├── mcpToolBox.py.    # Holds the functions / "tools
       ├── mcp_chatbot
             ├── mcp_chatbot.py     # Chatbot for LLM to interact with TigerGraph MCP Server (uses .env file)
             ├── server_config.json # Configuration file to define TigerGraph MCP Server
@@ -240,4 +248,4 @@ This project is licensed under the **MIT License**.
 
 ## Releases
 
-**V3.0** is the latest release that can be found at:[ https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/V3.0](https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/v3.0)
+**V3.1** is the latest release that can be found at:[ https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/V3.1](https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/v3.1)
