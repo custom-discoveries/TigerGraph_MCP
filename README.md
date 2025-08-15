@@ -248,4 +248,4 @@ This project is licensed under the **MIT License**.
 
 ## Releases
 
-**V3.1** is the latest release that can be found at:[ https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/V3.1](https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/v3.1)
+**V3.1** is the latest release that can be found at:[https://github.com/custom-discoveries/TigerGraph_MCP/releases/tag/V3.1]
