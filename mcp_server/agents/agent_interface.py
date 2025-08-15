@@ -1,9 +1,10 @@
-from typing import List
+#******************************************************************************
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
+# All rights reserved.
+# agent_interface.py: ChatAgent interface to assure standard implementation
+#******************************************************************************
 
 from abc import ABC, abstractmethod
-from autogen import ChatResult 
-
-from mcp_server.mcp_chatbot.mcp_services import MCPServices
 
 
 class MCP_AgentInterface(ABC):

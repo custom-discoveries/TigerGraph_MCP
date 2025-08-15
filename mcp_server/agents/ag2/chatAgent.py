@@ -37,54 +37,12 @@ logging.getLogger().setLevel(logging.WARNING)  # Optional: silence all root logg
 LLM_MODEL_FAMILY = initialLLMConstants()
 ANTHROPIC, OPENAI, GOOGLE = getALLFamilyLLMConstants()
 API_KEY, LLM_MODEL, TOKENS = getLLMConstants(LLM_MODEL_FAMILY)
-
-class RunMCPServer():
-
-    def __init__(self, mcpServices:MCPServices):
-        self.mcpServices:MCPServices = mcpServices
-        setErrorHandler()
-
-    
-    async def call_mcp_server(self,
-                 server_name: Annotated[str, "Name of MCP_Server to use"],
-                 tool_name: Annotated[str, "Name of tool to use"],
-                 attributes: Union[Annotated[dict, "Input parametes to run MCP call_tool"], None],
-                 context_variables: ContextVariables
-                 ) -> List:
-        try:
-
-            if not server_name:
-                context_variables["mcp_call_status"] = False
-            else:
-                context_variables["mcp_call_status"] = True
-
-            mcpService:MCPServices = self.mcpServices[server_name]
-            session = mcpService.getToolSession(tool_name)
-            logger.info(f"Calling MCP Tool: {tool_name} with attributes: {attributes}")
-
-            response = await session.call_tool(tool_name, arguments=attributes)
-            if response.isError:
-                context_variables["mcp_call_status"] = False
-                logger.error(f"MCP call_tool, error in answer, {tool_name} {attributes}")
-            else:
-                context_variables["mcp_call_status"] = True
-                context_variables["completed_stage"] = "CALL_TOOL_SUCCESS"
-                #context_variables["answer"]=answer
-            
-            if isinstance(response,CallToolResult):
-                answer = []
-                for item in response.content:
-                    answer.append(item.text)
-
-                return answer
-                   
-        except Exception as error:
-            #print(f"Error in call_mcp_server(): {error}")
-            context_variables["mcp_call_status"] = False
-            context_variables["error_message"] = error
-        
-        return None
-    
+ANTHROPIC_API_KEY, ANTHROPIC_LLM_MODEL, ANTHROPIC_TOKENS = getLLMConstants(ANTHROPIC)
+#
+# ChatAgent class encapulates all the functions for the 
+# Agent based behavior.
+#
+   
 class ChatAgent(MCP_AgentInterface):
     """
     ChatAgent class is used to support AG2 Agent based soltuion
@@ -132,6 +90,11 @@ class ChatAgent(MCP_AgentInterface):
                 max_consecutive_auto_reply=1,
                 human_input_mode="NEVER",
                 system_message=pretty_print_prompt,
+                llm_config = LLMConfig( api_type=ANTHROPIC.lower(),
+                                                    model=ANTHROPIC_LLM_MODEL,
+                                                    api_key=ANTHROPIC_API_KEY
+                                    )  
+
             )
 
             """Create user proxy agent for human interaction"""
@@ -225,4 +188,57 @@ class ChatAgent(MCP_AgentInterface):
             formatted_tools = f"{formatted_tools}\n"
 
         return formatted_tools
+#
+# RunMCPServer class actually makes the
+# call to the MCP server, this was done to 
+# assure reliability and cost effectiveness 
+#
+class RunMCPServer():
 
+    def __init__(self, mcpServices:MCPServices):
+        self.mcpServices:MCPServices = mcpServices
+        setErrorHandler()
+
+    
+    async def call_mcp_server(self,
+                 server_name: Annotated[str, "Name of MCP_Server to use"],
+                 tool_name: Annotated[str, "Name of tool to use"],
+                 attributes: Union[Annotated[dict, "Input parametes to run MCP call_tool"], None],
+                 context_variables: ContextVariables
+                 ) -> List:
+        try:
+
+            if not server_name:
+                context_variables["mcp_call_status"] = False
+            else:
+                context_variables["mcp_call_status"] = True
+
+            mcpService:MCPServices = self.mcpServices[server_name]
+            session = mcpService.getToolSession(tool_name)
+            logger.info(f"Calling MCP Tool: {tool_name} with attributes: {attributes}")
+            #
+            # Make MCP Server call here
+            #
+            response = await session.call_tool(tool_name, arguments=attributes)
+            if response.isError:
+                context_variables["mcp_call_status"] = False
+                logger.error(f"MCP call_tool, error in answer, {tool_name} {attributes}")
+            else:
+                context_variables["mcp_call_status"] = True
+                context_variables["completed_stage"] = "CALL_TOOL_SUCCESS"
+                #context_variables["answer"]=answer
+            
+            if isinstance(response,CallToolResult):
+                answer = []
+                for item in response.content:
+                    answer.append(item.text)
+
+                return answer
+                   
+        except Exception as error:
+            #print(f"Error in call_mcp_server(): {error}")
+            context_variables["mcp_call_status"] = False
+            context_variables["error_message"] = error
+        
+        return None
+ 

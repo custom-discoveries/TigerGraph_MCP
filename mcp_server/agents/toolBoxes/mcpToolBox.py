@@ -1,6 +1,10 @@
-import json
+#******************************************************************************
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
+# All rights reserved.
+# mcpToolBox.py: Holds all the "Tools"/"Functions" used by the Agents
+#******************************************************************************
 
-from typing import Annotated, List, Union
+from typing import Annotated, List
 
 from autogen.agentchat.group import (ReplyResult,
                                      ContextVariables

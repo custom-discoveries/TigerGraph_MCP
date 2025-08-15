@@ -1,8 +1,12 @@
+#********************************************************************************
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
+# All rights reserved.
+# mcp_services.py: This modelue defines the MCPServer and MCPServices classes
+# These classes define behavior for access the MCP Server and MCP services
+#********************************************************************************
 import os
 import sys
 import json
-import asyncio
-import traceback
 
 from typing import List, Optional, Union
 

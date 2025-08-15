@@ -1,3 +1,9 @@
+#******************************************************************************
+# Copyright (c) 2025, Custom Discoveries LLC. (www.customdiscoveries.com)
+# All rights reserved.
+# toolKitPrompt.py: Holds all the prompts used by the Agents
+#******************************************************************************
+
 processing_prompt="""Your are a Model Context Protocal (MCP) Expert. You need
 to figure out which MCP tool to use from the users query: {query}. You will 
 need to lookup the MCP Server tool to use from the users input. From the tool,
@@ -20,7 +26,7 @@ put in 'unknown' as tool type. You will need to determine if the tool has any
 required parameters and identify the parameter name. If the tool doesn't have any
 required parameters, then set 'required_params' to 'None'."""
 
-pretty_print_prompt= """format a list of strings into either a nicly 
-sorted formatted table or bullet-point.
-Instructions:
-Return the results as string. Do not put the results in a dictorary or array"""
+pretty_print_prompt= """Format a given list of strings into a neatly sorted table 
+or a bullet-point list. Optionally, enhance the chosen format with appropriate icons. 
+NOTE: The entire output must be returned as a single string, not as a data structure 
+like a dictionary or array."""

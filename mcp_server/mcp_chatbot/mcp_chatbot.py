@@ -8,7 +8,6 @@ import warnings
 import traceback
 
 from typing import List, Optional
-from anthropic.types import MessageParam
 from autogen.events.agent_events import TextEvent
 from mcp.shared.exceptions import McpError
 from mcp_server.mcp_chatbot.mcp_services import MCPServer, MCPServices
@@ -64,8 +63,6 @@ class MCP_ChatBot:
             logger.error(f"Error in initialize_mcp_services({server_name}) {error}")
     
     async def process_query(self, query:str):
-
-        messages: List[MessageParam] = [{'role': 'user', 'content': query}]
 
         try:
             
@@ -335,7 +332,7 @@ class MCP_ChatBot:
 
                         print("\nList of Resources:")
                         for item in self.resourceURL:
-                            print(f"  {item}")
+                            print(f"  @{item} [folder name]")
 
                     elif command == '/prompt':
                         if len(parts) < 2:
@@ -363,7 +360,7 @@ class MCP_ChatBot:
 
     def printChatMenu(self):
  
-        print("\nUse /tools to list available tools")
+        print("\nUse /tools | /tools tigerGraph to list available tools of MCP server")
         print("Use /prompts to list available prompts")
         print("Use /resources to list available resources")
         print("Use /help to reprint this menu")
